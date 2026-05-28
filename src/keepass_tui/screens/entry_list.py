@@ -2,10 +2,10 @@
 
 import curses
 
-from ui.widgets import (
+from keepass_tui.ui.widgets import (
     clamp, trunc, draw_box, safe_addstr, render_hint,
 )
-from ui.colors import C_HEADER, C_SELECTED, C_DIM, C_VALUE, C_WARN
+from keepass_tui.ui.colors import C_HEADER, C_SELECTED, C_DIM, C_VALUE, C_WARN
 from .entry_detail import screen_entry_detail
 from .ssh_screens import mass_change_passwords, screen_change_password
 

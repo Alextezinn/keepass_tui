@@ -1,15 +1,14 @@
 """Экран навигации по группам (файловый менеджер)."""
 
 import curses
-from typing import Optional
 
-from ui.widgets import (
+from keepass_tui.ui.widgets import (
     clamp, trunc, draw_box, safe_addstr, render_hint,
     show_error, input_box, confirm_delete,
 )
-from ui.colors import C_HEADER, C_SELECTED, C_TITLE, C_DIM, C_VALUE
-from keepass.db import (
-    refresh_group, group_path,
+from keepass_tui.ui.colors import C_SELECTED, C_TITLE, C_DIM, C_VALUE
+from keepass_tui.keepass.db import (
+    group_path,
     create_group as db_create_group,
     create_entry as db_create_entry,
     rename_group, update_entry,

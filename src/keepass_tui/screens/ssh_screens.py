@@ -2,10 +2,10 @@
 
 import curses
 
-from ui.widgets import draw_box, safe_addstr, render_hint, trunc, show_error
-from ui.colors import C_TITLE, C_DIM, C_VALUE, C_WARN, C_GOOD
-from ui.clipboard import copy_to_clipboard
-from ssh.passwords import ssh_change_password
+from keepass_tui.ui.widgets import draw_box, safe_addstr, render_hint, trunc, show_error
+from keepass_tui.ui.colors import C_TITLE, C_DIM, C_VALUE, C_WARN, C_GOOD
+from keepass_tui.ui.clipboard import copy_to_clipboard
+from keepass_tui.ssh.passwords import ssh_change_password
 
 
 def screen_change_password(stdscr, entry, kp, db_path) -> None:

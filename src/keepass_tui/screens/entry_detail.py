@@ -3,9 +3,9 @@
 import curses
 from typing import Optional
 
-from ui.widgets import draw_box, safe_addstr, render_hint, trunc
-from ui.colors import C_TITLE, C_DIM, C_VALUE, C_GOOD
-from ui.clipboard import copy_to_clipboard
+from keepass_tui.ui.widgets import draw_box, safe_addstr, render_hint, trunc
+from keepass_tui.ui.colors import C_TITLE, C_DIM, C_VALUE, C_GOOD
+from keepass_tui.ui.clipboard import copy_to_clipboard
 
 
 def screen_entry_detail(stdscr, entry, kp=None, db_path=None) -> Optional[str]:

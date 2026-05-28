@@ -6,10 +6,10 @@ import curses
 from pathlib import Path
 from typing import Optional
 
-from ui.widgets import (
+from keepass_tui.ui.widgets import (
     clamp, trunc, draw_box, safe_addstr, render_hint,
 )
-from ui.colors import C_TITLE, C_SELECTED, C_DIM, C_VALUE, C_WARN
+from keepass_tui.ui.colors import C_TITLE, C_SELECTED, C_DIM, C_VALUE, C_WARN
 
 
 def screen_pick_file(stdscr) -> Optional[str]:

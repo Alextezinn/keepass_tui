@@ -2,8 +2,8 @@
 
 import curses
 
-from ui.widgets import draw_box, safe_addstr, trunc
-from ui.colors import C_TITLE, C_DIM, C_SELECTED, C_WARN
+from keepass_tui.ui.widgets import draw_box, safe_addstr, trunc
+from keepass_tui.ui.colors import C_TITLE, C_DIM, C_SELECTED, C_WARN
 from .entry_list import screen_entries, screen_entries_search
 from .group_browser import screen_groups
 

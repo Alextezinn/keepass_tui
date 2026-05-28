@@ -16,12 +16,12 @@ except ImportError:
     print("Установите зависимость: pip install pykeepass")
     sys.exit(1)
 
-from ui.colors import init_colors
-from ui.widgets import draw_box, safe_addstr
-from ui.colors import C_WARN, C_DIM
-from screens.file_picker import screen_pick_file
-from screens.auth import screen_enter_password
-from screens.main_menu import screen_main_menu
+from keepass_tui.ui.colors import init_colors
+from keepass_tui.ui.widgets import draw_box, safe_addstr
+from keepass_tui.ui.colors import C_WARN, C_DIM
+from keepass_tui.screens.file_picker import screen_pick_file
+from keepass_tui.screens.auth import screen_enter_password
+from keepass_tui.screens.main_menu import screen_main_menu
 
 
 def main(stdscr) -> None:

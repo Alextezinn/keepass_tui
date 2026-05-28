@@ -3,8 +3,8 @@
 import curses
 from typing import Optional, Tuple
 
-from ui.widgets import draw_box, safe_addstr, render_hint, trunc
-from ui.colors import C_TITLE, C_DIM, C_SELECTED, C_VALUE, C_WARN
+from keepass_tui.ui.widgets import draw_box, safe_addstr, render_hint, trunc
+from keepass_tui.ui.colors import C_TITLE, C_DIM, C_SELECTED, C_VALUE
 
 
 def screen_enter_password(
