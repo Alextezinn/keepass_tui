@@ -16,23 +16,27 @@
 
 ```
 keepass_tui/
-├── main.py                 # точка входа
-├── ui/
-│   ├── colors.py           # цветовая палитра curses
-│   ├── widgets.py          # примитивы: рамки, диалоги, input-box
-│   └── clipboard.py        # копирование в буфер (Linux / macOS / Windows)
-├── keepass/
-│   └── db.py               # CRUD-операции с базой KeePass
-├── ssh/
-│   └── passwords.py        # генерация паролей, смена через SSH
-└── screens/
-    ├── auth.py             # экран авторизации
-    ├── file_picker.py      # выбор .kdbx файла
-    ├── main_menu.py        # главное меню
-    ├── entry_list.py       # список записей + поиск
-    ├── entry_detail.py     # детальный просмотр записи
-    ├── group_browser.py    # навигация по группам
-    └── ssh_screens.py      # экраны смены пароля по SSH
+├──src/
+│   └── keepass_tui                  # основной пакет
+│        ├── main.py                 # точка входа
+│        ├── ui/
+│        │   ├── colors.py           # цветовая палитра curses
+│        │   ├── widgets.py          # примитивы: рамки, диалоги, input-box
+│        │   └── clipboard.py        # копирование в буфер (Linux / macOS / Windows)
+│        ├── keepass/
+│        │   └── db.py               # CRUD-операции с базой KeePass
+│        ├── ssh/
+│        │   └── passwords.py        # генерация паролей, смена через SSH
+│        └── screens/
+│            ├── auth.py             # экран авторизации
+│            ├── file_picker.py      # выбор .kdbx файла
+│            ├── main_menu.py        # главное меню
+│            ├── entry_list.py       # список записей + поиск
+│            ├── entry_detail.py     # детальный просмотр записи
+│            ├── group_browser.py    # навигация по группам
+│            └── ssh_screens.py      # экраны смены пароля по SSH
+│
+└───tests                            # тесты
 ```
 
 ## Требования
