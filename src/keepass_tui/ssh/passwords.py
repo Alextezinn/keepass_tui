@@ -3,7 +3,11 @@
 import base64
 import secrets
 import string
+import json
 from typing import Optional, Tuple
+from datetime import datetime
+
+from constants import PATH_FILE_TMP
 
 
 def generate_password(n: int = 20) -> str:
@@ -32,9 +36,9 @@ def generate_password(n: int = 20) -> str:
 
 
 def ssh_change_password(
-    ip: str,
-    username: str,
-    current_password: str,
+        ip: str,
+        username: str,
+        current_password: str,
 ) -> Tuple[Optional[str], Optional[str]]:
     """Подключается по SSH и меняет пароль пользователя.
 
@@ -60,22 +64,30 @@ def ssh_change_password(
             timeout=10,
         )
 
+        # Передаём sudo-пароль через stdin напрямую — без shell-интерполяции.
+        # Это единственный надёжный способ при паролях со спецсимволами.
         encoded = base64.b64encode(
             f"{username}:{new_password}".encode()
         ).decode()
-        command = (
-            f"printf '%s\\n' {current_password!r} | sudo -S sh -c "
-            f'"echo {encoded} | base64 -d | chpasswd"'
-        )
+        command = f"sudo -S sh -c 'echo {encoded} | base64 -d | chpasswd'"
 
-        _, stdout, stderr = ssh.exec_command(command, get_pty=False)
-        exit_code = stdout.channel.recv_exit_status()
-        error_raw = stderr.read().decode().strip()
+        transport = ssh.get_transport()
+        channel = transport.open_session()
+        channel.exec_command(command)
+        channel.sendall(f"{current_password}\n".encode())
+        channel.shutdown_write()
+
+        exit_code = channel.recv_exit_status()
+        stderr_buf = b""
+        while channel.recv_stderr_ready():
+            stderr_buf += channel.recv_stderr(4096)
+        ssh.close()
+
+        error_raw = stderr_buf.decode().strip()
         real_err = "\n".join(
             line for line in error_raw.splitlines()
             if not line.startswith("[sudo]")
         )
-        ssh.close()
 
         if exit_code == 0:
             return new_password, None

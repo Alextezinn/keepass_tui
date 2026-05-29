@@ -2,13 +2,14 @@
 
 import curses
 
+
 from keepass_tui.ui.widgets import (
     clamp, trunc, draw_box, safe_addstr, render_hint,
     show_error, input_box, confirm_delete,
 )
-from keepass_tui.ui.colors import C_SELECTED, C_TITLE, C_DIM, C_VALUE
+from keepass_tui.ui.colors import C_HEADER, C_SELECTED, C_TITLE, C_DIM, C_VALUE
 from keepass_tui.keepass.db import (
-    group_path,
+    refresh_group, group_path,
     create_group as db_create_group,
     create_entry as db_create_entry,
     rename_group, update_entry,
@@ -25,6 +26,13 @@ def screen_groups(stdscr, kp, db_path=None) -> None:
     cursor = offset    = 0
 
     while True:
+        # После любого kp.reload() внутри экшенов current_group — устаревший объект.
+        # Обновляем его по UUID в начале каждой итерации.
+        current_group = (
+            kp.find_groups(uuid=current_group.uuid, first=True)
+            or kp.root_group
+        )
+
         stdscr.erase()
         h, w = stdscr.getmaxyx()
         draw_box(stdscr, 0, 0, h, w, "По группам")
@@ -70,23 +78,14 @@ def screen_groups(stdscr, kp, db_path=None) -> None:
             cursor = clamp(cursor + 1, 0, max(0, len(items) - 1))
 
         elif key in (curses.KEY_ENTER, 10, 13):
-
             if not items:
                 continue
-
             kind, obj = items[cursor]
-
             if kind == 'group':
                 stack, current_group, cursor, offset = _enter_group(
                     kp, stack, current_group, obj, cursor, offset
                 )
-
             else:
-                try:
-                    kp.reload()
-                except Exception:
-                    pass
-
                 screen_entry_detail(stdscr, obj, kp=kp, db_path=db_path)
 
         elif key == ord('a'):
@@ -100,7 +99,6 @@ def screen_groups(stdscr, kp, db_path=None) -> None:
         elif key == ord('e'):
             if items:
                 kind, obj = items[cursor]
-
                 if kind == 'group':
                     _action_edit_group(stdscr, kp, obj)
                 else:
@@ -109,12 +107,10 @@ def screen_groups(stdscr, kp, db_path=None) -> None:
         elif key == ord('d'):
             if items:
                 kind, obj = items[cursor]
-
                 if _action_delete(stdscr, kp, kind, obj):
                     cursor = clamp(cursor, 0, max(0, len(items) - 2))
 
         elif key in (27, ord('q')):
-
             if stack:
                 stack, current_group, cursor, offset = _go_back(kp, stack)
             else:
@@ -129,7 +125,6 @@ def screen_groups(stdscr, kp, db_path=None) -> None:
 
 def _action_create_entry(stdscr, kp, group) -> bool:
     title = input_box(stdscr, "Новая запись", "Название:")
-
     if not title:
         return False
 
@@ -162,42 +157,75 @@ def _action_create_group(stdscr, kp, parent_group) -> bool:
 
 
 def _action_edit_group(stdscr, kp, group) -> bool:
-    new_name = input_box(stdscr, "Редактирование папки", "Новое имя:", group.name or "")
+    old_name   = group.name or ""
+    group_uuid = group.uuid
 
+    new_name = input_box(stdscr, "Редактирование папки", "Новое имя:", old_name)
     if new_name is None:
         return False
 
-    err = rename_group(kp, group, new_name)
+    try:
+        kp.reload()
+    except Exception as exc:
+        show_error(stdscr, f"Ошибка перезагрузки базы: {exc}")
+        return False
+
+    live_group = kp.find_groups(uuid=group_uuid, first=True)
+
+    if live_group is None:
+        show_error(stdscr, "Группа не найдена в базе")
+        return False
+
+    err = rename_group(kp, live_group, new_name)
 
     if err:
         show_error(stdscr, err)
         return False
-
     return True
 
 
 def _action_edit_entry(stdscr, kp, entry) -> bool:
-    title    = input_box(stdscr, "Редактирование записи", "Название:", entry.title    or "")
+    # Собираем новые значения ДО reload — используем entry только как источник
+    # текущих значений для подстановки в input_box
+    old_title    = entry.title    or ""
+    old_username = entry.username or ""
+    old_password = entry.password or ""
+    old_url      = entry.url      or ""
+    entry_uuid   = entry.uuid
 
+    title    = input_box(stdscr, "Редактирование записи", "Название:", old_title)
     if title is None:
         return False
 
-    username = input_box(stdscr, "Редактирование записи", "Логин:",    entry.username or "")
+    username = input_box(stdscr, "Редактирование записи", "Логин:",    old_username)
 
     if username is None:
         return False
 
-    password = input_box(stdscr, "Редактирование записи", "Пароль:",   entry.password or "")
+    password = input_box(stdscr, "Редактирование записи", "Пароль:",   old_password)
 
     if password is None:
         return False
 
-    url      = input_box(stdscr, "Редактирование записи", "URL:",      entry.url      or "")
+    url      = input_box(stdscr, "Редактирование записи", "URL:",      old_url)
 
     if url is None:
         return False
 
-    err = update_entry(kp, entry, title, username, password, url)
+    # Перезагружаем базу и ищем живой объект по UUID
+    try:
+        kp.reload()
+    except Exception as exc:
+        show_error(stdscr, f"Ошибка перезагрузки базы: {exc}")
+        return False
+
+    live_entry = kp.find_entries(uuid=entry_uuid, first=True)
+
+    if live_entry is None:
+        show_error(stdscr, "Запись не найдена в базе (возможно, была удалена)")
+        return False
+
+    err = update_entry(kp, live_entry, title, username, password, url)
 
     if err:
         show_error(stdscr, err)
@@ -216,7 +244,6 @@ def _action_delete(stdscr, kp, kind: str, obj) -> bool:
                 return False
 
         err = db_delete_group(kp, obj)
-
     else:
         title = obj.title or "(без названия)"
 
@@ -247,13 +274,11 @@ def _draw_item_rows(stdscr, items, cursor, offset, list_h, w) -> None:
 
         if kind == 'group':
             label = trunc(f"📁 {obj.name or '(без имени)'}", w - 8)
-
             if idx == cursor:
                 safe_addstr(stdscr, row, 2, f"▶ {label}",
                             curses.color_pair(C_SELECTED) | curses.A_BOLD)
             else:
                 safe_addstr(stdscr, row, 4, label, curses.color_pair(C_TITLE))
-
         else:
             label = trunc(obj.title or "(без названия)", w // 2 - 4)
             login = trunc(obj.username or "",            w // 2 - 4)
