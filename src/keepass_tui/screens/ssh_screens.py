@@ -5,7 +5,7 @@ import curses
 from keepass_tui.ui.widgets import draw_box, safe_addstr, render_hint, trunc, show_error
 from keepass_tui.ui.colors import C_TITLE, C_DIM, C_VALUE, C_WARN, C_GOOD
 from keepass_tui.ui.clipboard import copy_to_clipboard
-from keepass_tui.ssh.passwords import ssh_change_password
+from keepass_tui.ssh.passwords import ssh_change_password, cleanup_tmp_against_keepass, recover_from_tmp
 
 
 def screen_change_password(stdscr, entry, kp, db_path) -> None:
@@ -70,7 +70,6 @@ def mass_change_passwords(stdscr, kp, entries, db_path) -> None:
         new_pw, error = ssh_change_password(
             ip, entry.username or "", entry.password or ""
         )
-
         if error:
             failed += 1
             results.append(f"✗ {entry.title}: {error[:80]}")
@@ -82,6 +81,7 @@ def mass_change_passwords(stdscr, kp, entries, db_path) -> None:
     try:
         kp.save()
         save_ok = True
+        cleanup_tmp_against_keepass(kp)
     except Exception as exc:
         save_ok = False
         show_error(stdscr, f"Ошибка сохранения базы: {exc}")
@@ -93,12 +93,10 @@ def mass_change_passwords(stdscr, kp, entries, db_path) -> None:
 
 def _extract_ip(raw_url: str) -> str:
     ip = raw_url.strip()
-
     for prefix in ("ssh://", "http://", "https://", "ftp://"):
         if ip.lower().startswith(prefix):
             ip = ip[len(prefix):]
             break
-
     return ip.rstrip("/").split("/")[0].split(":")[0]
 
 
@@ -126,10 +124,8 @@ def _confirm_change(stdscr, ip, username, current_password) -> bool:
 
     while True:
         key = stdscr.getch()
-
         if key in (ord('q'), 27):
             return False
-
         if key in (curses.KEY_ENTER, 10, 13):
             return True
 
@@ -148,10 +144,8 @@ def _confirm_mass_change(stdscr, count: int) -> bool:
 
     while True:
         key = stdscr.getch()
-
         if key in (ord('q'), 27):
             return False
-
         if key in (curses.KEY_ENTER, 10, 13):
             return True
 
@@ -168,10 +162,8 @@ def _show_change_result(stdscr, entry, kp, ip, new_password, error) -> None:
                     curses.color_pair(C_WARN))
         safe_addstr(stdscr, h // 2 + 2, 3, "Пароль в KeePass НЕ изменён.",
                     curses.color_pair(C_DIM))
-
     else:
         entry.password = new_password
-
         try:
             kp.save()
             save_ok  = True
@@ -189,7 +181,9 @@ def _show_change_result(stdscr, entry, kp, ip, new_password, error) -> None:
             safe_addstr(stdscr, h // 2 - 2, 17,
                 trunc(new_password, w - 20),
                 curses.color_pair(C_VALUE) | curses.A_BOLD)
-            safe_addstr(stdscr, h // 2, 3, "✓  База KeePass сохранена.",
+            save_ok_msg = "✓  База KeePass сохранена."
+            cleanup_tmp_against_keepass(kp)
+            safe_addstr(stdscr, h // 2, 3, save_ok_msg,
                         curses.color_pair(C_GOOD))
             copy_to_clipboard(new_password)
             safe_addstr(stdscr, h // 2 + 1, 3,
@@ -226,5 +220,52 @@ def _show_mass_result(stdscr, success: int, failed: int, results: list) -> None:
 
     safe_addstr(stdscr, h - 3, 3, "Нажмите любую клавишу...",
                 curses.color_pair(C_DIM))
+    stdscr.refresh()
+    stdscr.getch()
+
+
+def screen_recover_from_tmp(stdscr, kp) -> None:
+    """Экран восстановления паролей из страховочного файла.
+
+    Вызывается автоматически при старте если tmp-файл существует.
+    """
+    stdscr.erase()
+    h, w = stdscr.getmaxyx()
+    draw_box(stdscr, 0, 0, h, w, "Обнаружен страховочный файл паролей")
+
+    safe_addstr(stdscr, 2, 3,
+                "При предыдущем запуске пароли могли не сохраниться в KeePass.",
+                curses.color_pair(C_WARN) | curses.A_BOLD)
+    safe_addstr(stdscr, 3, 3,
+                "Выполняется проверка и восстановление...",
+                curses.color_pair(C_DIM))
+    stdscr.refresh()
+
+    results = recover_from_tmp(kp)
+
+    if not results:
+        return
+
+    stdscr.erase()
+    draw_box(stdscr, 0, 0, h, w, "Результат восстановления")
+
+    STATUS_COLOR = {
+        "synced": C_DIM,
+        "recovered": C_GOOD,
+        "failed": C_WARN,
+    }
+    STATUS_LABEL = {
+        "synced": "=",
+        "recovered": "✓",
+        "failed": "✗",
+    }
+
+    for i, res in enumerate(results[:h - 8]):
+        color = STATUS_COLOR.get(res["status"], C_DIM)
+        mark = STATUS_LABEL.get(res["status"], "?")
+        line = f"{mark} {res['ip']} / {res['username']} — {res['detail']}"
+        safe_addstr(stdscr, 3 + i, 3, trunc(line, w - 6), curses.color_pair(color))
+
+    safe_addstr(stdscr, h - 3, 3, "Нажмите любую клавишу...", curses.color_pair(C_DIM))
     stdscr.refresh()
     stdscr.getch()

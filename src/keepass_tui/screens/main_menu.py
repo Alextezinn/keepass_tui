@@ -2,10 +2,12 @@
 
 import curses
 
+from constants import PATH_FILE_TMP
 from keepass_tui.ui.widgets import draw_box, safe_addstr, trunc
 from keepass_tui.ui.colors import C_TITLE, C_DIM, C_SELECTED, C_WARN
 from .entry_list import screen_entries, screen_entries_search
 from .group_browser import screen_groups
+from .ssh_screens import screen_recover_from_tmp
 
 
 def screen_main_menu(stdscr, kp, db_name: str) -> None:
@@ -16,6 +18,10 @@ def screen_main_menu(stdscr, kp, db_name: str) -> None:
         ("❌  Выход",      "quit"),
     ]
     cursor = 0
+
+    # Если после предыдущего запуска остался страховочный файл — запускаем recovery
+    if PATH_FILE_TMP.exists():
+        screen_recover_from_tmp(stdscr, kp)
 
     while True:
         stdscr.erase()

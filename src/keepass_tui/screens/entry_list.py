@@ -7,7 +7,7 @@ from keepass_tui.ui.widgets import (
 )
 from keepass_tui.ui.colors import C_HEADER, C_SELECTED, C_DIM, C_VALUE, C_WARN
 from .entry_detail import screen_entry_detail
-from .ssh_screens import mass_change_passwords, screen_change_password
+from .ssh_screens import mass_change_passwords, screen_change_password, screen_recover_from_tmp
 
 
 def screen_entries(
@@ -206,6 +206,7 @@ def _handle_list_key(key, stdscr, kp, filtered, cursor, offset, list_h, db_path)
 
     elif key == ord('R'):
         mass_change_passwords(stdscr, kp, filtered, db_path)
+        screen_recover_from_tmp(stdscr, kp)
 
     elif key in (ord('q'), 27):
         return "quit"
