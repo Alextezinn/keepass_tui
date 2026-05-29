@@ -87,13 +87,7 @@ source .venv/bin/activate
 ### 3. Запустить
 
 ```bash
-python -m keepass_tui.main
-```
-
-Или напрямую:
-
-```bash
-python keepass_tui/main.py
+python src/main.py
 ```
 
 ## Управление
