@@ -52,6 +52,17 @@ def ssh_change_password(
         return None, "paramiko не установлен: pip install paramiko"
 
     new_password = generate_password()
+
+    data = {
+        "ip": ip,
+        "username": username,
+        "password": new_password,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    with open(PATH_FILE_TMP, "a") as file_tmp:
+        file_tmp.write(json.dumps(data, ensure_ascii=False) + "\n")
+
     try:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
