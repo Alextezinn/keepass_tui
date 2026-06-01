@@ -97,7 +97,7 @@ def cleanup_tmp_against_keepass(kp) -> int:
 
     if removed == len(records):
         _tmp_delete_file()
-        return 0
+        return removed
 
     # Все записи синхронизированы — удаляем файл целиком в subprocess
     if not surviving:
