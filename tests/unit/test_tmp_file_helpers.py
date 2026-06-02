@@ -1,28 +1,32 @@
 """
 Юнит-тесты на хелперы из интеграционных тестов
 """
+
 import unittest
 from pathlib import Path
-from integration.test_ssh_change_password import (TmpFileTestCase,
-                                                  _read_tmp, _make_entry, _make_kp)
+from integration.test_ssh_change_password import (
+    TmpFileTestCase,
+    _read_tmp,
+    _make_entry,
+    _make_kp,
+)
 
 # ── Указываем модулю на временный файл ДО импорта ────────────────────────────
 PATH_TMP_DIR = Path(__file__).parent.parent / "data"
 PATH_FILE_TMP = PATH_TMP_DIR / "servers.tmp"
 
 # # Патчим PATH_FILE_TMP на уровне модуля до его загрузки
-import keepass_tui.ssh.passwords as pw_mod
+import keepass_tui.ssh.passwords as pw_mod  # noqa E402
+
 pw_mod.PATH_FILE_TMP = PATH_FILE_TMP
 
 
-
 class TestTmpFileHelpers(TmpFileTestCase):
-
     def test_tmp_write_creates_valid_jsonl(self):
         pw_mod._tmp_write("1.2.3.4", "root", "P@ss1")
         records = _read_tmp()
         self.assertEqual(len(records), 1)
-        self.assertEqual(records[0]["ip"],       "1.2.3.4")
+        self.assertEqual(records[0]["ip"], "1.2.3.4")
         self.assertEqual(records[0]["username"], "root")
         self.assertEqual(records[0]["password"], "P@ss1")
         self.assertIn("date", records[0])

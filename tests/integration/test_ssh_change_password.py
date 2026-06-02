@@ -30,7 +30,8 @@ PATH_TMP_DIR = Path(__file__).parent.parent / "data"
 PATH_FILE_TMP = PATH_TMP_DIR / "servers.tmp"
 
 # # Патчим PATH_FILE_TMP на уровне модуля до его загрузки
-import keepass_tui.ssh.passwords as pw_mod
+import keepass_tui.ssh.passwords as pw_mod  # noqa E402
+
 pw_mod.PATH_FILE_TMP = PATH_FILE_TMP
 
 
@@ -40,6 +41,7 @@ def _sync_delete_file() -> None:
 
 
 # ── Вспомогательные фабрики ───────────────────────────────────────────────────
+
 
 def _make_entry(username: str, url: str, password: str):
     """Минимальный объект записи KeePass."""
@@ -60,8 +62,12 @@ def _make_kp(entries: list, save_ok: bool = True):
 
 def _write_tmp(ip: str, username: str, password: str) -> None:
     """Записывает одну строку в тестовый tmp-файл."""
-    record = {"ip": ip, "username": username, "password": password,
-              "date": "2025-01-01 00:00:00"}
+    record = {
+        "ip": ip,
+        "username": username,
+        "password": password,
+        "date": "2025-01-01 00:00:00",
+    }
 
     with open(PATH_FILE_TMP, "a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -105,8 +111,13 @@ def _make_real_kp(tmp_dir: Path, ip: str, username: str, password: str) -> tuple
     db_path = str(tmp_dir / "test.kdbx")
     kp = create_database(db_path, password="masterpass")
     group = kp.root_group
-    entry = kp.add_entry(group, title="test-server", username=username,
-                         password=password, url=f"ssh://{ip}")
+    entry = kp.add_entry(
+        group,
+        title="test-server",
+        username=username,
+        password=password,
+        url=f"ssh://{ip}",
+    )
     kp.save()
     # Переоткрываем — имитируем реальный сценарий загрузки базы
     kp = PyKeePass(db_path, password="masterpass")
@@ -123,11 +134,14 @@ class TmpFileTestCase(unittest.TestCase):
     """
     Базовый класс с очисткой
     """
+
     def setUp(self):
         PATH_FILE_TMP.unlink(missing_ok=True)
         # Заменяем fire-and-forget subprocess на синхронное удаление —
         # исключает ResourceWarning и гонки в тестах
-        self._patcher = patch.object(pw_mod, "_tmp_delete_file", side_effect=_sync_delete_file)
+        self._patcher = patch.object(
+            pw_mod, "_tmp_delete_file", side_effect=_sync_delete_file
+        )
         self._patcher.start()
 
     def tearDown(self):
@@ -138,6 +152,7 @@ class TmpFileTestCase(unittest.TestCase):
 # ══════════════════════════════════════════════════════════════════════════════
 # Сценарий 1: успешная смена — tmp удаляется через cleanup_tmp_against_keepass
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestSuccessfulPasswordChange(TmpFileTestCase):
     """
@@ -151,7 +166,9 @@ class TestSuccessfulPasswordChange(TmpFileTestCase):
 
         # Симулируем: tmp-файл уже содержит новый пароль (написан до save)
         _write_tmp(IP, USER, NEW_PW)
-        self.assertTrue(PATH_FILE_TMP.exists(), "tmp-файл должен существовать до cleanup")
+        self.assertTrue(
+            PATH_FILE_TMP.exists(), "tmp-файл должен существовать до cleanup"
+        )
 
         # KeePass уже содержит этот же пароль (save прошёл успешно)
         entry = _make_entry(USER, f"ssh://{IP}", NEW_PW)
@@ -161,7 +178,9 @@ class TestSuccessfulPasswordChange(TmpFileTestCase):
 
         self.assertEqual(removed, 1, "должна быть удалена 1 запись")
         gone = _wait_file_gone(PATH_FILE_TMP)
-        self.assertTrue(gone, "tmp-файл должен быть удалён после успешной синхронизации")
+        self.assertTrue(
+            gone, "tmp-файл должен быть удалён после успешной синхронизации"
+        )
 
     def test_tmp_file_partially_cleaned_when_one_entry_unsynced(self):
         """Если в tmp две записи и только одна синхронизирована — остаётся одна."""
@@ -172,7 +191,7 @@ class TestSuccessfulPasswordChange(TmpFileTestCase):
         _write_tmp(IP1, USER, PW_SYNCED)
         _write_tmp(IP2, USER, PW_UNSYNCED)
 
-        entry1 = _make_entry(USER, IP1, PW_SYNCED)   # совпадает
+        entry1 = _make_entry(USER, IP1, PW_SYNCED)  # совпадает
         entry2 = _make_entry(USER, IP2, "CurrentPw!")  # не совпадает
         kp = _make_kp([entry1, entry2], save_ok=True)
 
@@ -194,7 +213,9 @@ class TestSuccessfulPasswordChange(TmpFileTestCase):
             mock_proc.stdin.close = close
             return mock_proc
 
-        with patch("keepass_tui.ssh.passwords.subprocess.Popen", side_effect=sync_popen):
+        with patch(
+            "keepass_tui.ssh.passwords.subprocess.Popen", side_effect=sync_popen
+        ):
             removed = pw_mod.cleanup_tmp_against_keepass(kp)
 
         self.assertEqual(removed, 1)
@@ -207,6 +228,7 @@ class TestSuccessfulPasswordChange(TmpFileTestCase):
 # Сценарий 2: пароль сменён на сервере, kp.save() упал →
 #             recover подключается (успех) → обновляет KeePass → удаляет файл
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestRecoverAfterSaveFailure(TmpFileTestCase):
     """
@@ -237,7 +259,9 @@ class TestRecoverAfterSaveFailure(TmpFileTestCase):
         kp.save.assert_called_once()
         # tmp-файл удалён
         gone = _wait_file_gone(PATH_FILE_TMP)
-        self.assertTrue(gone, "tmp-файл должен быть удалён после успешного восстановления")
+        self.assertTrue(
+            gone, "tmp-файл должен быть удалён после успешного восстановления"
+        )
 
     def test_recover_ssh_connects_but_kp_save_fails_again(self):
         """
@@ -250,7 +274,7 @@ class TestRecoverAfterSaveFailure(TmpFileTestCase):
 
         _write_tmp(IP, USER, NEW_PW)
         entry = _make_entry(USER, f"ssh://{IP}", OLD_PW)
-        kp = _make_kp([entry], save_ok=False)   # save всегда падает
+        kp = _make_kp([entry], save_ok=False)  # save всегда падает
 
         with patch.object(pw_mod, "_ssh_check_connect", return_value=True):
             results = pw_mod.recover_from_tmp(kp)
@@ -261,14 +285,17 @@ class TestRecoverAfterSaveFailure(TmpFileTestCase):
 
         # tmp-файл должен остаться — пароль не сохранён
         time.sleep(0.2)
-        self.assertTrue(PATH_FILE_TMP.exists(),
-                        "tmp-файл НЕ должен удаляться при повторном сбое kp.save()")
+        self.assertTrue(
+            PATH_FILE_TMP.exists(),
+            "tmp-файл НЕ должен удаляться при повторном сбое kp.save()",
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Сценарий 3: пароль записан в tmp, но SSH-смена не прошла →
 #             recover пробует подключиться → неудача → файл удаляется
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestRecoverWhenSshChangeFailed(TmpFileTestCase):
     """
@@ -300,7 +327,9 @@ class TestRecoverWhenSshChangeFailed(TmpFileTestCase):
         kp.save.assert_not_called()
         # tmp-файл удаляется — запись устарела, хранить её бессмысленно
         gone = _wait_file_gone(PATH_FILE_TMP)
-        self.assertTrue(gone, "tmp-файл должен быть удалён если SSH-подключение не удалось")
+        self.assertTrue(
+            gone, "tmp-файл должен быть удалён если SSH-подключение не удалось"
+        )
 
     def test_recover_ssh_fails_kp_password_unchanged(self):
         """Дополнительная проверка: пароль в KeePass остался старым."""
@@ -315,13 +344,17 @@ class TestRecoverWhenSshChangeFailed(TmpFileTestCase):
         with patch.object(pw_mod, "_ssh_check_connect", return_value=False):
             pw_mod.recover_from_tmp(kp)
 
-        self.assertEqual(entry.password, OLD_PW,
-                         "пароль в KeePass не должен меняться при неудачном SSH")
+        self.assertEqual(
+            entry.password,
+            OLD_PW,
+            "пароль в KeePass не должен меняться при неудачном SSH",
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Тесты с реальной .kdbx базой — проверяем запись на диск
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestRealKeePassDatabase(TmpFileTestCase):
     """
@@ -367,8 +400,11 @@ class TestRealKeePassDatabase(TmpFileTestCase):
         # Проверяем что пароль реально на диске
         kp3 = _reload_kp(db_path)
         entry3 = kp3.entries[0]
-        self.assertEqual(entry3.password, NEW_PW,
-                         "новый пароль должен быть сохранён в .kdbx на диске")
+        self.assertEqual(
+            entry3.password,
+            NEW_PW,
+            "новый пароль должен быть сохранён в .kdbx на диске",
+        )
 
     # ── Сценарий 2: recover после сбоя save ──────────────────────────────────
 
@@ -396,8 +432,11 @@ class TestRealKeePassDatabase(TmpFileTestCase):
         # Переоткрываем базу с диска — проверяем реальную запись
         kp2 = _reload_kp(db_path)
         entry2 = kp2.entries[0]
-        self.assertEqual(entry2.password, NEW_PW,
-                         "новый пароль должен быть сохранён в .kdbx на диске")
+        self.assertEqual(
+            entry2.password,
+            NEW_PW,
+            "новый пароль должен быть сохранён в .kdbx на диске",
+        )
 
     def test_recover_does_not_update_kdbx_when_ssh_fails(self):
         """
@@ -419,8 +458,11 @@ class TestRealKeePassDatabase(TmpFileTestCase):
         # Переоткрываем — пароль должен остаться старым
         kp2 = _reload_kp(db_path)
         entry2 = kp2.entries[0]
-        self.assertEqual(entry2.password, OLD_PW,
-                         "пароль в .kdbx не должен меняться при неудачном SSH")
+        self.assertEqual(
+            entry2.password,
+            OLD_PW,
+            "пароль в .kdbx не должен меняться при неудачном SSH",
+        )
 
     def test_recover_kdbx_unchanged_when_save_fails_again(self):
         """
@@ -443,14 +485,18 @@ class TestRealKeePassDatabase(TmpFileTestCase):
 
         self.assertEqual(results[0]["status"], "failed")
         self.assertIn("сохранить в KeePass не удалось", results[0]["detail"])
-        self.assertTrue(PATH_FILE_TMP.exists(),
-                        "tmp-файл НЕ должен удаляться при сбое kp.save()")
+        self.assertTrue(
+            PATH_FILE_TMP.exists(), "tmp-файл НЕ должен удаляться при сбое kp.save()"
+        )
 
         # На диске всё ещё старый пароль — save не прошёл
-        kp2  = _reload_kp(db_path)
+        kp2 = _reload_kp(db_path)
         entry2 = kp2.entries[0]
-        self.assertEqual(entry2.password, OLD_PW,
-                         "пароль на диске не должен измениться при сбое save()")
+        self.assertEqual(
+            entry2.password,
+            OLD_PW,
+            "пароль на диске не должен измениться при сбое save()",
+        )
 
 
 if __name__ == "__main__":

@@ -8,17 +8,16 @@ from keepass_tui.ssh.passwords import generate_password
 
 
 class TestPasswordEntropy(unittest.TestCase):
-
     def test_password_entropy_approximation(self):
         """Примерная оценка криптографической энтропии пароля"""
 
         lengths = [20, 24, 32]
 
         alphabet_size = len(
-            string.ascii_lowercase +
-            string.ascii_uppercase +
-            string.digits +
-            string.punctuation
+            string.ascii_lowercase
+            + string.ascii_uppercase
+            + string.digits
+            + string.punctuation
         )
 
         for n in lengths:
@@ -35,13 +34,13 @@ class TestPasswordEntropy(unittest.TestCase):
                 self.assertGreaterEqual(
                     min_entropy,
                     120,
-                    f"Слишком низкая теоретическая энтропия: {min_entropy:.1f} бит"
+                    f"Слишком низкая теоретическая энтропия: {min_entropy:.1f} бит",
                 )
 
                 self.assertGreaterEqual(
                     adjusted_entropy,
                     100,
-                    f"Слишком низкая реальная энтропия: {adjusted_entropy:.1f} бит"
+                    f"Слишком низкая реальная энтропия: {adjusted_entropy:.1f} бит",
                 )
 
     def test_not_always_start_with_same_class(self):
@@ -75,7 +74,7 @@ class TestPasswordEntropy(unittest.TestCase):
         self.assertRegex(pwd, r"[a-z]")
         self.assertRegex(pwd, r"[A-Z]")
         self.assertRegex(pwd, r"[0-9]")
-        self.assertRegex(pwd, r"[{}]".format(re.escape(string.punctuation)))
+        self.assertRegex(pwd, rf"[{re.escape(string.punctuation)}]")
 
 
 if __name__ == "__main__":
