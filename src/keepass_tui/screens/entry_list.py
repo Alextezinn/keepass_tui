@@ -3,20 +3,28 @@
 import curses
 
 from keepass_tui.ui.widgets import (
-    clamp, trunc, draw_box, safe_addstr, render_hint,
+    clamp,
+    trunc,
+    draw_box,
+    safe_addstr,
+    render_hint,
 )
 from keepass_tui.ui.colors import C_HEADER, C_SELECTED, C_DIM, C_VALUE, C_WARN
 from .entry_detail import screen_entry_detail
-from .ssh_screens import mass_change_passwords, screen_change_password, screen_recover_from_tmp
+from .ssh_screens import (
+    mass_change_passwords,
+    screen_change_password,
+    screen_recover_from_tmp,
+)
 
 
 def screen_entries(
     stdscr, kp, entries, title: str = "Все записи", db_path=None
 ) -> None:
     """Плоский список записей с фильтрацией и действиями."""
-    cursor   = 0
-    offset   = 0
-    search   = ""
+    cursor = 0
+    offset = 0
+    search = ""
     searching = False
 
     while True:
@@ -39,21 +47,31 @@ def screen_entries(
         _draw_entry_rows(stdscr, filtered, cursor, offset, list_h, w)
 
         counter = f"{cursor + 1}/{len(filtered)}" if filtered else "0/0"
-        safe_addstr(stdscr, h - 4, w - len(counter) - 3, counter,
-                    curses.color_pair(C_VALUE))
+        safe_addstr(
+            stdscr, h - 4, w - len(counter) - 3, counter, curses.color_pair(C_VALUE)
+        )
 
         if searching:
-            safe_addstr(stdscr, h - 3, 3,
+            safe_addstr(
+                stdscr,
+                h - 3,
+                3,
                 f"Поиск: {search}_  (Esc — сбросить)",
-                curses.color_pair(C_WARN))
+                curses.color_pair(C_WARN),
+            )
         else:
-            render_hint(stdscr, h - 3, w, [
-                ("Enter", "просмотр"),
-                ("/",     "поиск"),
-                ("r",     "сменить пароль"),
-                ("R",     "массовая смена"),
-                ("q",     "назад"),
-            ])
+            render_hint(
+                stdscr,
+                h - 3,
+                w,
+                [
+                    ("Enter", "просмотр"),
+                    ("/", "поиск"),
+                    ("r", "сменить пароль"),
+                    ("R", "массовая смена"),
+                    ("q", "назад"),
+                ],
+            )
 
         stdscr.refresh()
         key = stdscr.getch()
@@ -63,7 +81,7 @@ def screen_entries(
                 key, searching, search, cursor
             )
 
-        elif key == ord('/'):
+        elif key == ord("/"):
             searching = True
             cursor = 0
 
@@ -87,24 +105,43 @@ def screen_entries_search(stdscr, kp) -> None:
         h, w = stdscr.getmaxyx()
         draw_box(stdscr, 0, 0, h, w, "Поиск")
 
-        safe_addstr(stdscr, 2, 3, f"Запрос: {search}_",
-                    curses.color_pair(C_VALUE) | curses.A_BOLD)
+        safe_addstr(
+            stdscr,
+            2,
+            3,
+            f"Запрос: {search}_",
+            curses.color_pair(C_VALUE) | curses.A_BOLD,
+        )
 
         q = search.lower()
         filtered = _filter_entries(kp.entries, q) if q else []
 
-        safe_addstr(stdscr, 3, 3,
+        safe_addstr(
+            stdscr,
+            3,
+            3,
             f"Найдено: {len(filtered)}" if q else "Начните вводить...",
-            curses.color_pair(C_DIM))
+            curses.color_pair(C_DIM),
+        )
 
-        for i, e in enumerate(filtered[:h - 8]):
-            safe_addstr(stdscr, 5 + i, 5,
+        for i, e in enumerate(filtered[: h - 8]):
+            safe_addstr(
+                stdscr,
+                5 + i,
+                5,
                 f"{trunc(e.title or '', 30):<32} {trunc(e.username or '', 25)}",
-                curses.color_pair(C_DIM))
+                curses.color_pair(C_DIM),
+            )
 
-        render_hint(stdscr, h - 3, w, [
-            ("Enter", "открыть"), ("Esc", "назад"),
-        ])
+        render_hint(
+            stdscr,
+            h - 3,
+            w,
+            [
+                ("Enter", "открыть"),
+                ("Esc", "назад"),
+            ],
+        )
         stdscr.refresh()
         key = stdscr.getch()
 
@@ -124,44 +161,55 @@ def screen_entries_search(stdscr, kp) -> None:
 
 # ─── Вспомогательные функции ─────────────────────────────────────────────────
 
+
 def _filter_entries(entries, q: str) -> list:
     if not q:
         return entries
     return [
-        e for e in entries
-        if q in (e.title    or "").lower()
+        e
+        for e in entries
+        if q in (e.title or "").lower()
         or q in (e.username or "").lower()
-        or q in (e.url      or "").lower()
+        or q in (e.url or "").lower()
     ]
 
 
 def _draw_columns_header(stdscr, w: int) -> None:
     col_t = 3
     col_u = w // 2
-    safe_addstr(stdscr, 2, col_t, trunc("НАЗВАНИЕ", col_u - col_t - 2),
-                curses.color_pair(C_HEADER) | curses.A_BOLD)
-    safe_addstr(stdscr, 2, col_u, trunc("ЛОГИН", w - col_u - 4),
-                curses.color_pair(C_HEADER) | curses.A_BOLD)
+    safe_addstr(
+        stdscr,
+        2,
+        col_t,
+        trunc("НАЗВАНИЕ", col_u - col_t - 2),
+        curses.color_pair(C_HEADER) | curses.A_BOLD,
+    )
+    safe_addstr(
+        stdscr,
+        2,
+        col_u,
+        trunc("ЛОГИН", w - col_u - 4),
+        curses.color_pair(C_HEADER) | curses.A_BOLD,
+    )
 
 
 def _draw_entry_rows(stdscr, filtered, cursor, offset, list_h, w) -> None:
     col_t = 3
     col_u = w // 2
 
-    for i, entry in enumerate(filtered[offset:offset + list_h]):
+    for i, entry in enumerate(filtered[offset : offset + list_h]):
         row = 3 + i
         idx = offset + i
 
-        t = trunc(entry.title    or "(без названия)", col_u - col_t - 2)
-        u = trunc(entry.username or "",               w - col_u - 4)
+        t = trunc(entry.title or "(без названия)", col_u - col_t - 2)
+        u = trunc(entry.username or "", w - col_u - 4)
 
         if idx == cursor:
-            safe_addstr(stdscr, row, col_t, f"▶ {t}",
-                        curses.color_pair(C_SELECTED))
+            safe_addstr(stdscr, row, col_t, f"▶ {t}", curses.color_pair(C_SELECTED))
             safe_addstr(stdscr, row, col_u, u, curses.color_pair(C_SELECTED))
         else:
             safe_addstr(stdscr, row, col_t + 2, t, curses.color_pair(C_DIM))
-            safe_addstr(stdscr, row, col_u,     u, curses.color_pair(C_VALUE))
+            safe_addstr(stdscr, row, col_u, u, curses.color_pair(C_VALUE))
 
 
 def _handle_search_key(key, searching, search, cursor):
@@ -189,26 +237,26 @@ def _handle_list_key(key, stdscr, kp, filtered, cursor, offset, list_h, db_path)
 
     elif key in (curses.KEY_ENTER, 10, 13):
         if filtered:
-
             try:
                 kp.reload()
             except Exception:
                 pass
 
-            result = screen_entry_detail(stdscr, filtered[cursor],
-                                         kp=kp, db_path=db_path)
+            result = screen_entry_detail(
+                stdscr, filtered[cursor], kp=kp, db_path=db_path
+            )
             if result == "quit":
                 return "quit"
 
-    elif key == ord('r'):
+    elif key == ord("r"):
         if filtered:
             screen_change_password(stdscr, filtered[cursor], kp, db_path)
 
-    elif key == ord('R'):
+    elif key == ord("R"):
         mass_change_passwords(stdscr, kp, filtered, db_path)
         screen_recover_from_tmp(stdscr, kp)
 
-    elif key in (ord('q'), 27):
+    elif key in (ord("q"), 27):
         return "quit"
 
     return cursor, offset

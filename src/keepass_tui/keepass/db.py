@@ -1,10 +1,9 @@
 """Операции с базой KeePass: CRUD для записей и групп."""
 
-from typing import Optional
 from pykeepass import PyKeePass
 
 
-def save(kp: PyKeePass) -> Optional[str]:
+def save(kp: PyKeePass) -> str | None:
     """Сохраняет базу. Возвращает сообщение об ошибке или None."""
     try:
         kp.save()
@@ -14,6 +13,7 @@ def save(kp: PyKeePass) -> Optional[str]:
 
 
 # ─── Группы ──────────────────────────────────────────────────────────────────
+
 
 def refresh_group(kp: PyKeePass, group):
     """После kp.reload() возвращает свежий объект группы по UUID."""
@@ -33,7 +33,7 @@ def group_path(group) -> str:
     return " / ".join(reversed(parts))
 
 
-def create_group(kp: PyKeePass, parent_group, name: str) -> Optional[str]:
+def create_group(kp: PyKeePass, parent_group, name: str) -> str | None:
     """Создаёт подгруппу. Возвращает ошибку или None."""
     try:
         kp.add_group(parent_group, name)
@@ -42,7 +42,7 @@ def create_group(kp: PyKeePass, parent_group, name: str) -> Optional[str]:
         return str(exc)
 
 
-def rename_group(kp: PyKeePass, group, new_name: str) -> Optional[str]:
+def rename_group(kp: PyKeePass, group, new_name: str) -> str | None:
     """Переименовывает группу. Возвращает ошибку или None."""
     try:
         group.name = new_name
@@ -51,7 +51,7 @@ def rename_group(kp: PyKeePass, group, new_name: str) -> Optional[str]:
         return str(exc)
 
 
-def delete_group(kp: PyKeePass, group) -> Optional[str]:
+def delete_group(kp: PyKeePass, group) -> str | None:
     """Удаляет группу. Возвращает ошибку или None."""
     try:
         kp.delete_group(group)
@@ -60,8 +60,6 @@ def delete_group(kp: PyKeePass, group) -> Optional[str]:
         return str(exc)
 
 
-# ─── Записи ──────────────────────────────────────────────────────────────────
-
 def create_entry(
     kp: PyKeePass,
     group,
@@ -69,7 +67,7 @@ def create_entry(
     username: str = "",
     password: str = "",
     url: str = "",
-) -> Optional[str]:
+) -> str | None:
     """Создаёт запись. Возвращает ошибку или None."""
     try:
         kp.add_entry(group, title, username, password, url=url)
@@ -85,19 +83,19 @@ def update_entry(
     username: str,
     password: str,
     url: str,
-) -> Optional[str]:
+) -> str | None:
     """Обновляет поля записи. Возвращает ошибку или None."""
     try:
-        entry.title    = title
+        entry.title = title
         entry.username = username
         entry.password = password
-        entry.url      = url
+        entry.url = url
         return save(kp)
     except Exception as exc:
         return str(exc)
 
 
-def delete_entry(kp: PyKeePass, entry) -> Optional[str]:
+def delete_entry(kp: PyKeePass, entry) -> str | None:
     """Удаляет запись. Возвращает ошибку или None."""
     try:
         kp.delete_entry(entry)

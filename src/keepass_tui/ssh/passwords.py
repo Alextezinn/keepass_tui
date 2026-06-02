@@ -7,18 +7,18 @@ import string
 import subprocess
 import sys
 from datetime import datetime
-from typing import Optional, Tuple
 
 from constants import PATH_FILE_TMP
 
 
 # ─── Генерация пароля ─────────────────────────────────────────────────────────
 
+
 def generate_password(n: int = 20) -> str:
     """Криптографически стойкий пароль длиной *n* с символами всех классов."""
-    lower   = string.ascii_lowercase
-    upper   = string.ascii_uppercase
-    digits  = string.digits
+    lower = string.ascii_lowercase
+    upper = string.ascii_uppercase
+    digits = string.digits
     special = string.punctuation
 
     required = [
@@ -36,13 +36,14 @@ def generate_password(n: int = 20) -> str:
 
 # ─── Страховочный файл ────────────────────────────────────────────────────────
 
+
 def _tmp_write(ip: str, username: str, new_password: str) -> None:
     """Записывает новый пароль в страховочный файл ДО отправки на сервер."""
     record = {
-        "ip":       ip,
+        "ip": ip,
         "username": username,
         "password": new_password,
-        "date":     datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
     with open(PATH_FILE_TMP, "a", encoding="utf-8") as fh:
@@ -85,13 +86,13 @@ def cleanup_tmp_against_keepass(kp) -> int:
         return 0
 
     surviving = []
-    removed   = 0
+    removed = 0
 
     for rec in records:
         matched_entry = _find_kp_entry(kp, rec["ip"], rec["username"])
 
         if matched_entry and matched_entry.password == rec["password"]:
-            removed += 1          # пароль совпал — запись уже в KeePass
+            removed += 1  # пароль совпал — запись уже в KeePass
         else:
             surviving.append(rec)
 
@@ -105,9 +106,7 @@ def cleanup_tmp_against_keepass(kp) -> int:
         return removed
 
     # Есть несинхронизированные строки — перезаписываем файл в subprocess
-    new_content = "\n".join(
-        json.dumps(r, ensure_ascii=False) for r in surviving
-    ) + "\n"
+    new_content = "\n".join(json.dumps(r, ensure_ascii=False) for r in surviving) + "\n"
 
     script = (
         "import sys; "
@@ -119,12 +118,12 @@ def cleanup_tmp_against_keepass(kp) -> int:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    proc.stdin.write(new_content.encode("utf-8"))
-    proc.stdin.close()
+    if proc.stdin is not None:
+        proc.stdin.write(new_content.encode("utf-8"))
+        proc.stdin.close()
     # Не ждём — fire-and-forget; файл небольшой, гонок нет
 
     return removed
-
 
 
 def _find_kp_entry(kp, ip: str, username: str):
@@ -136,7 +135,7 @@ def _find_kp_entry(kp, ip: str, username: str):
         # url может быть "192.168.1.1", "ssh://192.168.1.1", "ssh://192.168.1.1/"
         for prefix in ("ssh://", "http://", "https://", "ftp://"):
             if url.lower().startswith(prefix):
-                url = url[len(prefix):]
+                url = url[len(prefix) :]
                 break
 
         url = url.rstrip("/").split("/")[0].split(":")[0]
@@ -174,8 +173,11 @@ def _ssh_check_connect(ip: str, username: str, password: str) -> bool:
 def _tmp_delete_file() -> None:
     """Удаляет страховочный файл в subprocess (fire-and-forget)."""
     subprocess.Popen(
-        [sys.executable, "-c",
-         f"import pathlib; pathlib.Path({str(PATH_FILE_TMP)!r}).unlink(missing_ok=True)"],
+        [
+            sys.executable,
+            "-c",
+            f"import pathlib; pathlib.Path({str(PATH_FILE_TMP)!r}).unlink(missing_ok=True)",
+        ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
@@ -210,11 +212,14 @@ def recover_from_tmp(kp) -> list[dict]:
 
         # Уже синхронизировано
         if kp_entry and kp_entry.password == tmp_pw:
-            results.append({
-                "ip": ip, "username": username,
-                "status": "synced",
-                "detail": "пароль уже совпадает с KeePass",
-            })
+            results.append(
+                {
+                    "ip": ip,
+                    "username": username,
+                    "status": "synced",
+                    "detail": "пароль уже совпадает с KeePass",
+                }
+            )
             continue
 
         # Пробуем подключиться с паролем из tmp
@@ -231,18 +236,23 @@ def recover_from_tmp(kp) -> list[dict]:
             except Exception as exc:
                 # kp.save() упал — файл трогать нельзя, пароль всё ещё нужен.
                 # Возвращаем частичные результаты и выходим без удаления файла.
-                results.append({
-                    "ip": ip, "username": username,
-                    "status": "failed",
-                    "detail": f"пароль актуален на сервере, но сохранить в KeePass не удалось: {exc}",
-                })
+                results.append(
+                    {
+                        "ip": ip,
+                        "username": username,
+                        "status": "failed",
+                        "detail": f"пароль актуален на сервере, но сохранить в KeePass не удалось: {exc}",
+                    }
+                )
                 return results
         else:
             # Подключение не удалось — пароль на сервере не был сменён
             detail = "подключение с паролем из tmp не удалось — запись устарела"
             status = "failed"
 
-        results.append({"ip": ip, "username": username, "status": status, "detail": detail})
+        results.append(
+            {"ip": ip, "username": username, "status": status, "detail": detail}
+        )
 
     # В любом случае удаляем файл — он либо обработан, либо устарел
     _tmp_delete_file()
@@ -252,11 +262,12 @@ def recover_from_tmp(kp) -> list[dict]:
 
 # ─── Смена пароля по SSH ─────────────────────────────────────────────────────
 
+
 def ssh_change_password(
     ip: str,
     username: str,
     current_password: str,
-) -> Tuple[Optional[str], Optional[str]]:
+) -> tuple[str | None, str | None]:
     """Подключается по SSH и меняет пароль пользователя.
 
     Перед подключением записывает новый пароль в страховочный файл,
@@ -290,27 +301,28 @@ def ssh_change_password(
 
         # Передаём sudo-пароль через stdin напрямую — без shell-интерполяции.
         # Это единственный надёжный способ при паролях со спецсимволами.
-        encoded = base64.b64encode(
-            f"{username}:{new_password}".encode()
-        ).decode()
+        encoded = base64.b64encode(f"{username}:{new_password}".encode()).decode()
         command = f"sudo -S sh -c 'echo {encoded} | base64 -d | chpasswd'"
 
         transport = ssh.get_transport()
-        channel   = transport.open_session()
+
+        if transport is None:
+            raise RuntimeError("Транспорт SSH недоступен")
+
+        channel = transport.open_session()
         channel.exec_command(command)
         channel.sendall(f"{current_password}\n".encode())
         channel.shutdown_write()
 
-        exit_code  = channel.recv_exit_status()
+        exit_code = channel.recv_exit_status()
         stderr_buf = b""
         while channel.recv_stderr_ready():
             stderr_buf += channel.recv_stderr(4096)
         ssh.close()
 
         error_raw = stderr_buf.decode().strip()
-        real_err  = "\n".join(
-            line for line in error_raw.splitlines()
-            if not line.startswith("[sudo]")
+        real_err = "\n".join(
+            line for line in error_raw.splitlines() if not line.startswith("[sudo]")
         )
 
         if exit_code == 0:

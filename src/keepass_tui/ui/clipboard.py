@@ -20,13 +20,15 @@ def copy_to_clipboard(text: str) -> None:
             try:
                 subprocess.run(
                     ["xclip", "-selection", "clipboard"],
-                    input=text.encode(), check=True,
+                    input=text.encode(),
+                    check=True,
                     stderr=subprocess.DEVNULL,
                 )
             except (FileNotFoundError, subprocess.CalledProcessError):
                 subprocess.run(
                     ["xsel", "--clipboard", "--input"],
-                    input=text.encode(), check=True,
+                    input=text.encode(),
+                    check=True,
                     stderr=subprocess.DEVNULL,
                 )
 

@@ -89,8 +89,9 @@ def _open_database(stdscr, db_path):
 def _show_loading(stdscr, text: str) -> None:
     stdscr.erase()
     h, w = stdscr.getmaxyx()
-    safe_addstr(stdscr, h // 2, w // 2 - 10, text,
-                curses.color_pair(C_WARN) | curses.A_BOLD)
+    safe_addstr(
+        stdscr, h // 2, w // 2 - 10, text, curses.color_pair(C_WARN) | curses.A_BOLD
+    )
     stdscr.refresh()
 
 
@@ -104,10 +105,16 @@ def _show_message(
     stdscr.erase()
     h, w = stdscr.getmaxyx()
     draw_box(stdscr, 0, 0, h, w, title)
-    safe_addstr(stdscr, h // 2 - 1, w // 2 - len(message) // 2, message,
-                curses.color_pair(C_WARN) | curses.A_BOLD)
-    safe_addstr(stdscr, h // 2 + 1, w // 2 - len(hint) // 2, hint,
-                curses.color_pair(C_DIM))
+    safe_addstr(
+        stdscr,
+        h // 2 - 1,
+        w // 2 - len(message) // 2,
+        message,
+        curses.color_pair(C_WARN) | curses.A_BOLD,
+    )
+    safe_addstr(
+        stdscr, h // 2 + 1, w // 2 - len(hint) // 2, hint, curses.color_pair(C_DIM)
+    )
     stdscr.refresh()
     stdscr.getch()
 
