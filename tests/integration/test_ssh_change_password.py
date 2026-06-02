@@ -33,6 +33,7 @@ PATH_FILE_TMP = PATH_TMP_DIR / "servers.tmp"
 import keepass_tui.ssh.passwords as pw_mod  # noqa E402
 
 pw_mod.PATH_FILE_TMP = PATH_FILE_TMP
+MASTER = "masterpass"
 
 
 def _sync_delete_file() -> None:
@@ -120,14 +121,14 @@ def _make_real_kp(tmp_dir: Path, ip: str, username: str, password: str) -> tuple
     )
     kp.save()
     # Переоткрываем — имитируем реальный сценарий загрузки базы
-    kp = PyKeePass(db_path, password="masterpass")
+    kp = PyKeePass(db_path, password=MASTER)
     entry = kp.entries[0]
     return kp, entry, db_path
 
 
 def _reload_kp(db_path: str) -> PyKeePass:
     """Переоткрывает базу с диска — проверяем что данные реально сохранились."""
-    return PyKeePass(db_path, password="masterpass")
+    return PyKeePass(db_path, password=MASTER)
 
 
 class TmpFileTestCase(unittest.TestCase):
