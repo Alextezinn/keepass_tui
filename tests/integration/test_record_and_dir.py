@@ -489,5 +489,222 @@ class TestGroupDelete(KeePassTestCase):
         self.assertNotIn("Remove", names)
 
 
+class TestDuplicateNames(KeePassTestCase):
+    """
+    KeePass не запрещает одинаковые имена — ни для записей, ни для групп.
+    Единственный надёжный идентификатор — UUID.
+    Тесты проверяют что такие объекты создаются, сохраняются на диск,
+    и различаются именно по UUID, а не по имени.
+    """
+
+    def test_two_entries_same_title_same_group(self):
+        """Две записи с одинаковым title в одной группе — обе сохраняются."""
+        db_mod.create_entry(
+            self.kp,
+            self.kp.root_group,
+            title="Duplicate",
+            username="user1",
+            password="P@ss1!",
+        )
+        db_mod.create_entry(
+            self.kp,
+            self.kp.root_group,
+            title="Duplicate",
+            username="user2",
+            password="P@ss2!",
+        )
+        kp2 = self.reload()
+        entries = kp2.find_entries(title="Duplicate")
+        self.assertEqual(len(entries), 2)
+
+    def test_duplicate_entries_have_different_uuids(self):
+        db_mod.create_entry(
+            self.kp, self.kp.root_group, title="Twin", username="u1", password="P1!"
+        )
+        db_mod.create_entry(
+            self.kp, self.kp.root_group, title="Twin", username="u2", password="P2!"
+        )
+        kp2 = self.reload()
+        entries = kp2.find_entries(title="Twin")
+        uuids = [e.uuid for e in entries]
+        self.assertEqual(len(set(uuids)), 2, "UUID у дублей должны быть разными")
+
+    def test_duplicate_entries_have_different_usernames(self):
+        """Поля у дублей независимы — username не перезаписывается."""
+        db_mod.create_entry(
+            self.kp, self.kp.root_group, title="Same", username="alice", password="P1!"
+        )
+        db_mod.create_entry(
+            self.kp, self.kp.root_group, title="Same", username="bob", password="P2!"
+        )
+        kp2 = self.reload()
+        entries = kp2.find_entries(title="Same")
+        usernames = {e.username for e in entries}
+        self.assertSetEqual(usernames, {"alice", "bob"})
+
+    def test_update_one_duplicate_by_uuid_does_not_affect_other(self):
+        """Обновление по UUID затрагивает только одну из двух одноимённых записей."""
+        db_mod.create_entry(
+            self.kp,
+            self.kp.root_group,
+            title="Clone",
+            username="original1",
+            password="P1!",
+        )
+        db_mod.create_entry(
+            self.kp,
+            self.kp.root_group,
+            title="Clone",
+            username="original2",
+            password="P2!",
+        )
+        self.kp = self.reload()
+        entries = self.kp.find_entries(title="Clone")
+        target = entries[0]
+        target_uuid = target.uuid
+
+        db_mod.update_entry(
+            self.kp, target, title="Clone", username="changed", password="P1!", url=""
+        )
+        kp2 = self.reload()
+        entries2 = kp2.find_entries(title="Clone")
+        by_uuid = kp2.find_entries(uuid=target_uuid, first=True)
+        other = next(e for e in entries2 if e.uuid != target_uuid)
+
+        self.assertEqual(by_uuid.username, "changed")
+        self.assertEqual(other.username, "original2")
+
+    def test_delete_one_duplicate_by_uuid_leaves_other(self):
+        """Удаление по UUID убирает только одну запись, вторая остаётся."""
+        db_mod.create_entry(
+            self.kp, self.kp.root_group, title="Ghost", username="keep", password="P1!"
+        )
+        db_mod.create_entry(
+            self.kp,
+            self.kp.root_group,
+            title="Ghost",
+            username="remove",
+            password="P2!",
+        )
+        self.kp = self.reload()
+        to_del = next(
+            e for e in self.kp.find_entries(title="Ghost") if e.username == "remove"
+        )
+        db_mod.delete_entry(self.kp, to_del)
+        kp2 = self.reload()
+        entries = kp2.find_entries(title="Ghost")
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].username, "keep")
+
+    # ── Группы с одинаковым именем ────────────────────────────────────────────
+
+    def test_two_groups_same_name_same_parent(self):
+        """Две группы с одинаковым именем в одном родителе — обе сохраняются."""
+        db_mod.create_group(self.kp, self.kp.root_group, "Work")
+        db_mod.create_group(self.kp, self.kp.root_group, "Work")
+        kp2 = self.reload()
+        groups = kp2.find_groups(name="Work")
+        # find_groups возвращает включая root — фильтруем по прямому родителю
+        direct = [g for g in groups if g.group and g.group.name == kp2.root_group.name]
+        self.assertEqual(len(direct), 2)
+
+    def test_duplicate_groups_have_different_uuids(self):
+        db_mod.create_group(self.kp, self.kp.root_group, "Twin")
+        db_mod.create_group(self.kp, self.kp.root_group, "Twin")
+        kp2 = self.reload()
+        groups = [
+            g
+            for g in kp2.find_groups(name="Twin")
+            if g.group and g.group.name == kp2.root_group.name
+        ]
+        uuids = [g.uuid for g in groups]
+        self.assertEqual(len(set(uuids)), 2, "UUID у дублей должны быть разными")
+
+    def test_rename_one_duplicate_group_by_uuid_leaves_other(self):
+        """Переименование по UUID затрагивает только одну из двух одноимённых групп."""
+        db_mod.create_group(self.kp, self.kp.root_group, "Dup")
+        db_mod.create_group(self.kp, self.kp.root_group, "Dup")
+        self.kp = self.reload()
+        groups = [
+            g
+            for g in self.kp.find_groups(name="Dup")
+            if g.group and g.group.name == self.kp.root_group.name
+        ]
+        target_uuid = groups[0].uuid
+
+        db_mod.rename_group(self.kp, groups[0], "Renamed")
+        kp2 = self.reload()
+        renamed = kp2.find_groups(uuid=target_uuid, first=True)
+        still_dup = [
+            g
+            for g in kp2.find_groups(name="Dup")
+            if g.group and g.group.name == kp2.root_group.name
+        ]
+
+        self.assertEqual(renamed.name, "Renamed")
+        self.assertEqual(len(still_dup), 1)
+
+    def test_delete_one_duplicate_group_by_uuid_leaves_other(self):
+        """Удаление по UUID убирает только одну группу, вторая остаётся."""
+        db_mod.create_group(self.kp, self.kp.root_group, "Dup")
+        db_mod.create_group(self.kp, self.kp.root_group, "Dup")
+        self.kp = self.reload()
+        groups = [
+            g
+            for g in self.kp.find_groups(name="Dup")
+            if g.group and g.group.name == self.kp.root_group.name
+        ]
+        target_uuid = groups[0].uuid
+
+        db_mod.delete_group(self.kp, groups[0])
+        kp2 = self.reload()
+        remaining = [
+            g
+            for g in kp2.find_groups(name="Dup")
+            if g.group and g.group.name == kp2.root_group.name
+        ]
+
+        self.assertEqual(len(remaining), 1)
+        self.assertNotEqual(remaining[0].uuid, target_uuid)
+
+    # ── Запись и группа с одинаковым именем ─────────────────────────────────
+
+    def test_entry_and_group_can_share_same_name(self):
+        """Запись и группа с одним именем в одной папке не конфликтуют."""
+        db_mod.create_group(self.kp, self.kp.root_group, "Shared")
+        db_mod.create_entry(
+            self.kp, self.kp.root_group, title="Shared", username="u", password="P1!"
+        )
+        kp2 = self.reload()
+        group = kp2.find_groups(name="Shared", first=True)
+        entry = kp2.find_entries(title="Shared", first=True)
+        self.assertIsNotNone(group)
+        self.assertIsNotNone(entry)
+
+    def test_delete_entry_does_not_affect_same_name_group(self):
+        db_mod.create_group(self.kp, self.kp.root_group, "Shared")
+        db_mod.create_entry(
+            self.kp, self.kp.root_group, title="Shared", username="u", password="P1!"
+        )
+        self.kp = self.reload()
+        entry = self.kp.find_entries(title="Shared", first=True)
+        db_mod.delete_entry(self.kp, entry)
+        kp2 = self.reload()
+        self.assertIsNone(kp2.find_entries(title="Shared", first=True))
+        self.assertIsNotNone(kp2.find_groups(name="Shared", first=True))
+
+    def test_delete_group_does_not_affect_same_name_entry(self):
+        db_mod.create_group(self.kp, self.kp.root_group, "Shared")
+        db_mod.create_entry(
+            self.kp, self.kp.root_group, title="Shared", username="u", password="P1!"
+        )
+        self.kp = self.reload()
+        group = self.kp.find_groups(name="Shared", first=True)
+        db_mod.delete_group(self.kp, group)
+        kp2 = self.reload()
+        self.assertIsNone(kp2.find_groups(name="Shared", first=True))
+        self.assertIsNotNone(kp2.find_entries(title="Shared", first=True))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

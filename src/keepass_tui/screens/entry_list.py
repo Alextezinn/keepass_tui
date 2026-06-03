@@ -11,6 +11,7 @@ from keepass_tui.ui.widgets import (
 )
 from keepass_tui.ui.colors import C_HEADER, C_SELECTED, C_DIM, C_VALUE, C_WARN
 from .entry_detail import screen_entry_detail
+from .pwned_screen import screen_check_single, screen_check_all
 from .ssh_screens import (
     mass_change_passwords,
     screen_change_password,
@@ -69,6 +70,8 @@ def screen_entries(
                     ("/", "поиск"),
                     ("r", "сменить пароль"),
                     ("R", "массовая смена"),
+                    ("b", "проверка утечек"),
+                    ("B", "массовая проверка утечек"),
                     ("q", "назад"),
                 ],
             )
@@ -255,6 +258,13 @@ def _handle_list_key(key, stdscr, kp, filtered, cursor, offset, list_h, db_path)
     elif key == ord("R"):
         mass_change_passwords(stdscr, kp, filtered, db_path)
         screen_recover_from_tmp(stdscr, kp)
+
+    elif key == ord("b"):
+        if filtered:
+            screen_check_single(stdscr, filtered[cursor])
+
+    elif key == ord("B"):
+        screen_check_all(stdscr, filtered)
 
     elif key in (ord("q"), 27):
         return "quit"

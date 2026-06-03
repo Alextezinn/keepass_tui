@@ -4,7 +4,7 @@ import math
 from collections import Counter
 import re
 
-from keepass_tui.ssh.passwords import generate_password
+from keepass_tui.security.generator import generate_password
 
 
 class TestPasswordEntropy(unittest.TestCase):

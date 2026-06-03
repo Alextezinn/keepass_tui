@@ -42,10 +42,10 @@ keepass_tui
 └───tests                                  # тесты
      ├── data                              # папка с тестовыми данными
      ├── integration                       # интеграционные тесты
-     │    ├── test_record_and_dir.py       # тесты CRUD-операций для записей и папок        
+     │    ├── test_record_and_dir.py       # тесты CRUD-операций для записей и папок
      │    └── test_ssh_change_password.py  # тесты смены паролей на серверах по SSH
      └── unit                              # модульные тесты
-          ├── test_password_entropy.py     # тесты проверки надёжности пароля        
+          ├── test_password_entropy.py     # тесты проверки надёжности пароля
           └── test_tmp_file_helpers.py     # тесты на хелперы из интеграционных тестов
 ```
 
