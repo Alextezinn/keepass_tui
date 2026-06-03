@@ -123,3 +123,6 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# добавить тестовый файл по этому пути
+tests/data/test.kdbx
