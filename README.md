@@ -1,138 +1,97 @@
 # keepass-tui
 
-**Полноценный TUI-менеджер паролей KeePassXC**
+**A full-featured TUI password manager for KeePassXC**
 
-Простой, быстрый и удобный инструмент для работы с `.kdbx` базами. Поддерживает все основные операции: просмотр, создание, редактирование и удаление записей и групп.
+A simple, fast, and convenient tool for working with `.kdbx` databases. Supports all major operations: viewing, creating, editing, and deleting entries and groups.
 
-Построен на библиотеке `curses` — без лишних зависимостей и тяжёлого интерфейса.
+Built with the `curses` library — no heavy dependencies or bloated interface.
 
-## Возможности
+## Features
 
-- Навигация по группам как в файловом менеджере
-- Просмотр, создание, редактирование и удаление записей и групп
-- Плоский список всех записей с поиском по названию и логину по мере ввода (`/`)
-- Копирование пароля в буфер обмена одной клавишей
-- Смена пароля на удалённом сервере по SSH (одиночная и массовая)
-- Проверка паролей на утечки через Have I Been Pwned (с использованием K-анонимности)
-- Поддержка мастер-пароля и ключевого файла
+- File-manager-like navigation through groups
+- View, create, edit, and delete entries and groups
+- Flat list of all entries with incremental search by title and username (`/`)
+- Copy password to clipboard with a single key
+- Change password on a remote server via SSH (single and bulk)
+- Check passwords for breaches using Have I Been Pwned (with K-anonymity)
+- Support for master password and key file
 
-## Проверка утечек паролей
+## Password Breach Checking
 
-Приложение проверяет скомпрометированные пароли через официальный API **Have I Been Pwned** с использованием **K-анонимности**.
-Это позволяет безопасно проверять пароль, не отправляя его в открытом виде на сервер.
+The application checks compromised passwords via the official **Have I Been Pwned** API using **K-anonymity**. This allows safe checking without sending the password in plain text to the server.
 
-## Структура проекта
+## Project Structure
 
 ```
 keepass_tui
-├──src
-│   └── keepass_tui                        # основной пакет
-│        ├── main.py                       # точка входа
+├── src
+│   └── keepass_tui                        # main package
+│        ├── main.py                       # entry point
 │        ├── ui
-│        │   ├── colors.py                 # цветовая палитра curses
-│        │   ├── widgets.py                # примитивы: рамки, диалоги, input-box
-│        │   └── clipboard.py              # копирование в буфер (Linux / macOS / Windows)
+│        │   ├── colors.py                 # curses color palette
+│        │   ├── widgets.py                # primitives: frames, dialogs, input-box
+│        │   └── clipboard.py              # clipboard support (Linux / macOS / Windows)
 │        ├── keepass
-│        │   └── db.py                     # CRUD-операции с базой KeePass
+│        │   └── db.py                     # CRUD operations with KeePass database
 │        ├── security
-│        │   ├── generator.py              # генерация паролей
-│        │   └── hibp.py                   # проверка утечек
+│        │   ├── generator.py              # password generation
+│        │   └── hibp.py                   # breach checking
 │        ├── ssh
-│        │   └── passwords.py              # смена через SSH
+│        │   └── passwords.py              # SSH password changing
 │        └── screens
-│            ├── auth.py                   # экран авторизации
-│            ├── file_picker.py            # выбор .kdbx файла
-│            ├── main_menu.py              # главное меню
-│            ├── entry_list.py             # список записей + поиск
-│            ├── entry_detail.py           # детальный просмотр записи
-│            ├── group_browser.py          # навигация по группам
-│            ├── pwned_screen.py           # экран проверки пароля на утечки
-│            └── ssh_screens.py            # экраны смены пароля по SSH
+│            ├── auth.py                   # authorization screen
+│            ├── file_picker.py            # .kdbx file selection
+│            ├── main_menu.py              # main menu
+│            ├── entry_list.py             # entry list + search
+│            ├── entry_detail.py           # detailed entry view
+│            ├── group_browser.py          # group navigation
+│            ├── pwned_screen.py           # password breach check screen
+│            └── ssh_screens.py            # SSH password change screens
 │
-│
-└───tests                                  # тесты
-     ├── data                              # папка с тестовыми данными
-     ├── integration                       # интеграционные тесты
-     │    ├── test_record_and_dir.py       # тесты CRUD-операций для записей и папок
-     │    └── test_ssh_change_password.py  # тесты смены паролей на серверах по SSH
-     └── unit                              # модульные тесты
-          ├── test_password_entropy.py     # тесты проверки надёжности пароля
-          └── test_tmp_file_helpers.py     # тесты на хелперы из интеграционных тестов
+└── tests                                  # tests
+     ├── data                              # test data folder
+     ├── integration                       # integration tests
+     │    ├── test_record_and_dir.py       # CRUD tests for entries and groups
+     │    └── test_ssh_change_password.py  # SSH password change tests
+     └── unit                              # unit tests
+          ├── test_password_entropy.py     # password entropy tests
+          └── test_tmp_file_helpers.py     # helper tests
 ```
 
-## Тестирование
+## Testing
 
-Проект содержит как **модульные**, так и **интеграционные** тесты.
+The project includes both **unit** and **integration** tests.
 
-### Запуск всех тестов:
+### Run all tests:
 
 ```bash
 PYTHONPATH=src uv run python -m unittest discover -s tests -v
 ```
 
-### Разделы тестов:
-
-- tests/unit/ — модульные тесты (включая проверку энтропии паролей)
-- tests/integration/ — интеграционные тесты (CRUD операций и смены паролей по SSH)
-
-#### Pre-commit hooks
-В проекте настроены pre-commit хуки для автоматической проверки качества кода.
-
-После клонирования репозитория необходимо один раз установить Git-хуки:
-
-```bash
-pre-commit install
-```
-
-После этого проверки будут запускаться автоматически перед каждым `git commit`.
-
-##### Запуск на одном файле:
-```bash
-pre-commit run --files src/keepass_tui/keepass/db.py
-```
-
-##### Запуск на всех файлах:
-```bash
-pre-commit run --all-files
-```
-
-
-## Требования
+## Requirements
 
 - Python **3.10+**
-- [`uv`](https://docs.astral.sh/uv/) — менеджер окружений и зависимостей
-- Для смены паролей по SSH: `paramiko` (опционально, устанавливается вместе с проектом)
-- Для копирования в буфер на Linux: `xclip` или `xsel`
+- [`uv`](https://docs.astral.sh/uv/) — environment and dependency manager
+- For SSH password changing: `paramiko` (optional)
+- For clipboard on Linux: `xclip` or `xsel`
 
-## Установка `uv`
+## Quick Start
 
-```bash
-curl -Ls https://astral.sh/uv/install.sh | sh
-```
-
-Или через `pip`:
-
-```bash
-pip install uv
-```
-
-## Быстрый старт
-
-### 1. Клонировать репозиторий
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Alextezinn/keepass_tui.git
 cd keepass_tui
 ```
 
-### 2. Создать виртуальное окружение и установить зависимости
+### 2. Create virtual environment and install dependencies
 
 ```bash
 uv venv
 uv sync
 ```
 
-Активировать окружение:
+Activate the environment:
 
 ```bash
 # Linux / macOS
@@ -142,51 +101,42 @@ source .venv/bin/activate
 .venv\Scripts\Activate.ps1
 ```
 
-### 3. Запустить
+### 3. Run
 
 ```bash
 python src/main.py
 ```
 
-## Управление
+## Controls
 
-| Экран             | Клавиша       | Действие                        |
-|-------------------|---------------|---------------------------------|
-| Список записей    | `↑` / `↓`    | Навигация                       |
-|                   | `Enter`       | Открыть запись                  |
-|                   | `/`           | Поиск                           |
-|                   | `r`           | Сменить пароль по SSH           |
-|                   | `R`           | Массовая смена паролей по SSH   |
-|                   | `q` / `Esc`   | Назад                           |
-| Просмотр записи   | `p`           | Показать / скрыть пароль        |
-|                   | `c`           | Скопировать пароль в буфер      |
-|                   | `r`           | Сменить пароль по SSH           |
-| По группам        | `a`           | Создать запись                  |
-|                   | `f`           | Создать папку                   |
-|                   | `e`           | Редактировать                   |
-|                   | `d`           | Удалить                         |
-| Авторизация       | `Tab`         | Переключить поле                |
+| Screen        | Key             | Action              |
+|---------------|-----------------|---------------------|
+| Entry List    | `↑` / `↓`       | Navigation          |
+|               | `Enter`         | Open entry          |
+|               | `/`             | Search              |
+|               | `r`             | Change password via SSH |
+|               | `R`             | Bulk SSH password change |
+|               | `b`             | Breach check        |
+|               | `B`             | Bulk Breach Check   |
+|               | `q` / `Esc`     | Back                |
+| Entry View    | `p`             | Show / hide password |
+|               | `c`             | Copy password to clipboard |
+|               | `r`             | Change password via SSH |
+| Group Browser | `a`             | Create entry        |
+|               | `f`             | Create group        |
+|               | `e`             | Edit                |
+|               | `d`             | Delete              |
+| Authorization | `Tab`           | Switch field        |
 
-## SSH: смена пароля
+## SSH: Password Change
 
-В поле **URL** записи укажите IP-адрес или hostname сервера:
+In the **URL** field of an entry, specify the server IP or hostname:
 
 ```
 192.168.1.10
 ssh://myserver.example.com
 ```
 
-При нажатии `r` приложение подключится по SSH под логином и паролем из записи,
-сгенерирует новый пароль, сменит его командой `chpasswd` через `sudo` и
-автоматически сохранит в базе KeePass.
+When you press `r`, the app will connect via SSH using the credentials from the entry, generate a new password, change it using `chpasswd` via `sudo`, and automatically save it back to the KeePass database.
 
-> ⚠️ Функция требует, чтобы пользователь имел право запускать `sudo chpasswd`
-> без интерактивного подтверждения (или чтобы текущий пароль принимался `sudo -S`).
-
-## Зависимости
-
-| Пакет | Назначение                               | Обязательный |
-|-----|------------------------------------------|:------------:|
-| `pykeepass` | Создание, чтение и запись `.kdbx` файлов | ✅           |
-| `paramiko` | SSH-подключение для смены паролей        | ➖ опционально |
-| `pre-commit`  | Проверка кода перед коммитом             | ➖ опционально |
+> ⚠️ The feature requires that the user can run `sudo chpasswd` without interactive confirmation.
