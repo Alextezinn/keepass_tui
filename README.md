@@ -78,6 +78,14 @@ PYTHONPATH=src uv run python -m unittest discover -s tests -v
 #### Pre-commit hooks
 В проекте настроены pre-commit хуки для автоматической проверки качества кода.
 
+После клонирования репозитория необходимо один раз установить Git-хуки:
+
+```bash
+pre-commit install
+```
+
+После этого проверки будут запускаться автоматически перед каждым `git commit`.
+
 ##### Запуск на одном файле:
 ```bash
 pre-commit run --files src/keepass_tui/keepass/db.py
