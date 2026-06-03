@@ -28,8 +28,11 @@ keepass_tui
 │        │   └── clipboard.py              # копирование в буфер (Linux / macOS / Windows)
 │        ├── keepass
 │        │   └── db.py                     # CRUD-операции с базой KeePass
+│        ├── security
+│        │   ├── generator.py              # генерация паролей
+│        │   └── hibp.py                   # проверка утечек               
 │        ├── ssh
-│        │   └── passwords.py              # генерация паролей, смена через SSH
+│        │   └── passwords.py              # смена через SSH
 │        └── screens
 │            ├── auth.py                   # экран авторизации
 │            ├── file_picker.py            # выбор .kdbx файла
@@ -37,7 +40,9 @@ keepass_tui
 │            ├── entry_list.py             # список записей + поиск
 │            ├── entry_detail.py           # детальный просмотр записи
 │            ├── group_browser.py          # навигация по группам
+│            ├── pwned_screen.py           # экран проверки пароля на утечки
 │            └── ssh_screens.py            # экраны смены пароля по SSH
+│
 │
 └───tests                                  # тесты
      ├── data                              # папка с тестовыми данными

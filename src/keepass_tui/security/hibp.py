@@ -8,10 +8,9 @@ import hashlib
 import time
 import urllib.error
 import urllib.request
-from typing import Tuple
 
 
-def is_password_pwned(password: str, retries: int = 3) -> Tuple[bool, int]:
+def is_password_pwned(password: str, retries: int = 3) -> tuple[bool, int]:
     """Проверяет пароль по базе HaveIBeenPwned.
 
     Args:
@@ -26,10 +25,10 @@ def is_password_pwned(password: str, retries: int = 3) -> Tuple[bool, int]:
         urllib.error.HTTPError — при HTTP-ошибке кроме 429.
         urllib.error.URLError  — при сетевых проблемах.
     """
-    sha1   = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
+    sha1 = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
     prefix = sha1[:5]
     suffix = sha1[5:]
-    url    = f"https://api.pwnedpasswords.com/range/{prefix}"
+    url = f"https://api.pwnedpasswords.com/range/{prefix}"
 
     for attempt in range(retries):
         try:
@@ -40,6 +39,7 @@ def is_password_pwned(password: str, retries: int = 3) -> Tuple[bool, int]:
             with urllib.request.urlopen(req, timeout=10) as response:
                 data = response.read().decode("utf-8")
             break
+
         except urllib.error.HTTPError as exc:
             if exc.code == 429 and attempt < retries - 1:
                 retry_after = int(exc.headers.get("Retry-After", "5"))
@@ -51,9 +51,12 @@ def is_password_pwned(password: str, retries: int = 3) -> Tuple[bool, int]:
 
     for line in data.splitlines():
         line = line.strip()
+
         if not line or ":" not in line:
             continue
+
         hash_suffix, count = line.split(":", 1)
+
         if hash_suffix == suffix:
             return True, int(count)
 

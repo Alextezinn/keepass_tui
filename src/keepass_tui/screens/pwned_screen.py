@@ -38,11 +38,13 @@ def screen_check_all(stdscr, entries) -> None:
 
     for i, entry in enumerate(has_passwords):
         _draw_progress(stdscr, f"Проверяю {i + 1}/{total}: {trunc(entry.title or '', 40)}...")
+
         try:
             pwned, count = is_password_pwned(entry.password or "")
             error = None
         except Exception as exc:
             pwned, count, error = False, 0, str(exc)
+
         results.append({"entry": entry, "pwned": pwned, "count": count, "error": error})
 
     _show_mass_result(stdscr, results)
@@ -71,6 +73,7 @@ def _confirm(stdscr, entry_title: str) -> bool:
         stdscr.refresh()
 
         key = stdscr.getch()
+
         if key in (curses.KEY_ENTER, 10, 13):
             return True
         if key in (ord('q'), 27):
@@ -97,6 +100,7 @@ def _confirm_mass(stdscr, count: int) -> bool:
         stdscr.refresh()
 
         key = stdscr.getch()
+
         if key in (curses.KEY_ENTER, 10, 13):
             return True
         if key in (ord('q'), 27):
