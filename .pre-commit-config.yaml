@@ -33,6 +33,6 @@ repos:
     hooks:
       - id: unit-tests
         name: run unittest
-        entry: uv run python -m unittest discover -s tests -v
+        entry: bash -c 'PYTHONPATH=src uv run python -m unittest discover -s tests -v'
         language: system
         pass_filenames: false
