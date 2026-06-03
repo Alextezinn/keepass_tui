@@ -139,4 +139,13 @@ ssh://myserver.example.com
 
 When you press `r`, the app will connect via SSH using the credentials from the entry, generate a new password, change it using `chpasswd` via `sudo`, and automatically save it back to the KeePass database.
 
-> ⚠️ The feature requires that the user can run `sudo chpasswd` without interactive confirmation.
+> ⚠️ This feature requires that the user has permission to run `sudo chpasswd`
+> without interactive confirmation (or that the current password is accepted by `sudo -S`).
+
+## Dependencies
+
+| Package       | Purpose                                      | Required     |
+|---------------|----------------------------------------------|:------------:|
+| `pykeepass`   | Create, read and write `.kdbx` files         | ✅           |
+| `paramiko`    | SSH connection for password changing         | ➖ optional  |
+| `pre-commit`  | Code quality checks before commit            | ➖ optional  |
