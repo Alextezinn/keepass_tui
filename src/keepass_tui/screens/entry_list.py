@@ -20,7 +20,12 @@ from .ssh_screens import (
 
 
 def screen_entries(
-    stdscr, kp, entries, title: str = "Все записи", db_path=None
+    stdscr,
+    kp,
+    entries,
+    title: str = "Все записи",
+    db_path=None,
+    cfg: dict | None = None,
 ) -> None:
     """Плоский список записей с фильтрацией и действиями."""
     cursor = 0
@@ -99,7 +104,7 @@ def screen_entries(
                 cursor, offset = result
 
 
-def screen_entries_search(stdscr, kp) -> None:
+def screen_entries_search(stdscr, kp, cfg: dict | None = None) -> None:
     """Быстрый поиск с немедленным показом результатов."""
     search = ""
 
@@ -153,7 +158,7 @@ def screen_entries_search(stdscr, kp) -> None:
 
         elif key in (curses.KEY_ENTER, 10, 13):
             if filtered:
-                screen_entries(stdscr, kp, filtered, f'Поиск: "{search}"')
+                screen_entries(stdscr, kp, filtered, f'Поиск: "{search}"', cfg=cfg)
 
         elif key in (curses.KEY_BACKSPACE, 127, 8):
             search = search[:-1]

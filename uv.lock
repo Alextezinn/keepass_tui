@@ -328,6 +328,7 @@ dependencies = [
     { name = "paramiko" },
     { name = "pre-commit" },
     { name = "pykeepass" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -335,6 +336,7 @@ requires-dist = [
     { name = "paramiko", specifier = ">=5.0.0" },
     { name = "pre-commit", specifier = ">=4.6.0" },
     { name = "pykeepass", specifier = ">=4.1.1.post1" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
 ]
 
 [[package]]

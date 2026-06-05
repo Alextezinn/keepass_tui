@@ -22,11 +22,13 @@ from keepass_tui.ui.colors import C_WARN, C_DIM
 from keepass_tui.screens.file_picker import screen_pick_file
 from keepass_tui.screens.auth import screen_enter_password
 from keepass_tui.screens.main_menu import screen_main_menu
+from config import load
 
 
 def main(stdscr) -> None:
     curses.curs_set(0)
     init_colors()
+    cfg = load()
     stdscr.keypad(True)
 
     # 1. Выбор файла
@@ -40,7 +42,7 @@ def main(stdscr) -> None:
         return
 
     # 3. Главное меню
-    screen_main_menu(stdscr, kp, Path(db_path).name)
+    screen_main_menu(stdscr, kp, Path(db_path).name, cfg)
 
 
 def _open_database(stdscr, db_path):

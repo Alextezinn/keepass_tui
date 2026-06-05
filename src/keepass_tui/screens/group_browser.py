@@ -26,7 +26,7 @@ from keepass_tui.keepass.db import (
 from .entry_detail import screen_entry_detail
 
 
-def screen_groups(stdscr, kp, db_path=None) -> None:
+def screen_groups(stdscr, kp, db_path=None, cfg: dict | None = None) -> None:
     """Файловый менеджер по группам KeePass."""
     stack: list = []
     current_group = kp.root_group
@@ -106,7 +106,7 @@ def screen_groups(stdscr, kp, db_path=None) -> None:
                 screen_entry_detail(stdscr, obj, kp=kp, db_path=db_path)
 
         elif key == ord("a"):
-            if _action_create_entry(stdscr, kp, current_group):
+            if _action_create_entry(stdscr, kp, current_group, cfg):
                 cursor = len(items)
 
         elif key == ord("f"):
@@ -119,7 +119,7 @@ def screen_groups(stdscr, kp, db_path=None) -> None:
                 if kind == "group":
                     _action_edit_group(stdscr, kp, obj)
                 else:
-                    _action_edit_entry(stdscr, kp, obj)
+                    _action_edit_entry(stdscr, kp, obj, cfg)
 
         elif key == ord("d"):
             if items:
@@ -141,13 +141,15 @@ def screen_groups(stdscr, kp, db_path=None) -> None:
 # ─── Действия (CRUD) ─────────────────────────────────────────────────────────
 
 
-def _action_create_entry(stdscr, kp, group) -> bool:
+def _action_create_entry(stdscr, kp, group, cfg: dict | None = None) -> bool:
     title = input_box(stdscr, "Новая запись", "Название:")
     if not title:
         return False
 
     username = input_box(stdscr, "Новая запись", "Логин:") or ""
-    password = input_box(stdscr, "Новая запись", "Пароль:") or ""
+    password = (
+        input_box(stdscr, "Новая запись", "Пароль:", is_password=True, cfg=cfg) or ""
+    )
     url = input_box(stdscr, "Новая запись", "URL:") or ""
 
     err = db_create_entry(kp, group, title, username, password, url)
@@ -202,7 +204,7 @@ def _action_edit_group(stdscr, kp, group) -> bool:
     return True
 
 
-def _action_edit_entry(stdscr, kp, entry) -> bool:
+def _action_edit_entry(stdscr, kp, entry, cfg: dict | None = None) -> bool:
     # Собираем новые значения ДО reload — используем entry только как источник
     # текущих значений для подстановки в input_box
     old_title = entry.title or ""
@@ -220,7 +222,14 @@ def _action_edit_entry(stdscr, kp, entry) -> bool:
     if username is None:
         return False
 
-    password = input_box(stdscr, "Редактирование записи", "Пароль:", old_password)
+    password = input_box(
+        stdscr,
+        "Редактирование записи",
+        "Пароль:",
+        old_password,
+        is_password=True,
+        cfg=cfg,
+    )
 
     if password is None:
         return False

@@ -10,7 +10,8 @@ from .group_browser import screen_groups
 from .ssh_screens import screen_recover_from_tmp
 
 
-def screen_main_menu(stdscr, kp, db_name: str) -> None:
+def screen_main_menu(stdscr, kp, db_name: str, cfg: dict | None = None) -> None:
+    cfg = cfg or {}
     items = [
         ("📋  Все записи", "all"),
         ("🔍  Поиск", "search"),
@@ -74,13 +75,13 @@ def screen_main_menu(stdscr, kp, db_name: str) -> None:
             _reload_safe(kp)
 
             if action == "all":
-                screen_entries(stdscr, kp, kp.entries, "Все записи")
+                screen_entries(stdscr, kp, kp.entries, "Все записи", cfg=cfg)
 
             elif action == "search":
-                screen_entries_search(stdscr, kp)
+                screen_entries_search(stdscr, kp, cfg=cfg)
 
             elif action == "groups":
-                screen_groups(stdscr, kp)
+                screen_groups(stdscr, kp, cfg=cfg)
 
         elif key == ord("q"):
             return

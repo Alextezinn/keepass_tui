@@ -9,6 +9,7 @@ from .colors import (
     C_VALUE,
     C_WARN,
     C_BORDER,
+    C_GOOD,
 )
 
 
@@ -124,10 +125,21 @@ def confirm_delete(stdscr, text: str) -> bool:
             return False
 
 
-def input_box(stdscr, title: str, prompt: str, initial: str = "") -> str | None:
-    """Однострочный текстовый ввод. Возвращает строку или None (Esc)."""
-    text = initial
+def input_box(
+    stdscr,
+    title: str,
+    prompt: str,
+    initial: str = "",
+    is_password: bool = False,
+    cfg: dict | None = None,
+) -> str | None:
+    """Однострочный текстовый ввод. Возвращает строку или None (Esc).
 
+    Если is_password=True и cfg передан — при нажатии Enter показывает
+    всплывающее окно-предупреждение если пароль слабый или пустой.
+    Пользователь может продолжить или вернуться к вводу.
+    """
+    text = initial
     while True:
         stdscr.erase()
         h, w = stdscr.getmaxyx()
@@ -144,18 +156,96 @@ def input_box(stdscr, title: str, prompt: str, initial: str = "") -> str | None:
         stdscr.refresh()
 
         key = stdscr.getch()
-
         if key == 27:
             return None
-
         elif key in (curses.KEY_ENTER, 10, 13):
             value = text.strip()
+            if not value:
+                if is_password:
+                    _warn_popup(stdscr, "Пароль не может быть пустым.")
+                continue
+            if is_password and cfg:
+                try:
+                    from config import is_weak, min_length
 
-            if value:
-                return value
-
+                    if is_weak(value, cfg):
+                        if not _weak_password_popup(stdscr, value, min_length(cfg)):
+                            continue  # пользователь выбрал "вернуться"
+                except Exception:
+                    pass
+            return value
         elif key in (curses.KEY_BACKSPACE, 127, 8):
             text = text[:-1]
-
         elif 32 <= key < 256:
             text += chr(key)
+
+
+def _warn_popup(stdscr, message: str) -> None:
+    """Небольшое информационное окно поверх текущего экрана."""
+    h, w = stdscr.getmaxyx()
+    pw, ph = min(w - 10, 60), 7
+    py, px = (h - ph) // 2, (w - pw) // 2
+
+    popup = curses.newwin(ph, pw, py, px)
+    draw_box(popup, 0, 0, ph, pw, "Внимание")
+    safe_addstr(
+        popup, 2, 3, trunc(message, pw - 6), curses.color_pair(C_WARN) | curses.A_BOLD
+    )
+    safe_addstr(popup, ph - 2, 3, "Нажмите любую клавишу...", curses.color_pair(C_DIM))
+    popup.refresh()
+    popup.getch()
+    del popup
+    stdscr.touchwin()
+    stdscr.refresh()
+
+
+def _weak_password_popup(stdscr, password: str, min_len: int) -> bool:
+    """Всплывающее окно предупреждения о слабом пароле.
+
+    Returns:
+        True  — пользователь согласен использовать слабый пароль.
+        False — пользователь хочет вернуться и исправить.
+    """
+    h, w = stdscr.getmaxyx()
+    pw, ph = min(w - 10, 64), 11
+    py, px = (h - ph) // 2, (w - pw) // 2
+
+    while True:
+        popup = curses.newwin(ph, pw, py, px)
+        draw_box(popup, 0, 0, ph, pw, "⚠  Слабый пароль")
+        safe_addstr(
+            popup,
+            2,
+            3,
+            f"Длина пароля: {len(password)} симв. — меньше минимума ({min_len}).",
+            curses.color_pair(C_WARN) | curses.A_BOLD,
+        )
+        safe_addstr(
+            popup, 4, 3, "Такой пароль легко подобрать.", curses.color_pair(C_DIM)
+        )
+        safe_addstr(
+            popup,
+            6,
+            3,
+            "Рекомендуется использовать пароль длиннее.",
+            curses.color_pair(C_DIM),
+        )
+        safe_addstr(
+            popup,
+            ph - 3,
+            3,
+            "Enter - всё равно использовать",
+            curses.color_pair(C_WARN),
+        )
+        safe_addstr(
+            popup, ph - 2, 3, "Esc   - вернуться и исправить", curses.color_pair(C_GOOD)
+        )
+        popup.refresh()
+        key = popup.getch()
+        del popup
+        stdscr.touchwin()
+        stdscr.refresh()
+        if key in (curses.KEY_ENTER, 10, 13):
+            return True
+        if key in (27, ord("q")):
+            return False

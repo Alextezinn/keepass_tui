@@ -1,0 +1,3 @@
+password:
+  min_length: 12        # ниже этого — предупреждение
+  generated_length: 22  # длина генерации пароля

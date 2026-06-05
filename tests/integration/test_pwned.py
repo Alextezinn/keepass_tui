@@ -99,7 +99,7 @@ def _http_error(code: int, headers: dict | None = None) -> urllib.error.HTTPErro
 class TestIsPasswordPwned(unittest.TestCase):
     def _patch_urlopen(self, response_body: str):
         return patch(
-            "keepass_tui.keepass.pwned.urllib.request.urlopen",
+            "keepass_tui.security.hibp.urllib.request.urlopen",
             return_value=_FakeResponse(response_body),
         )
 
@@ -135,7 +135,7 @@ class TestIsPasswordPwned(unittest.TestCase):
         response_body = "AAAAA:1"
 
         with patch(
-            "keepass_tui.keepass.pwned.urllib.request.urlopen",
+            "keepass_tui.security.hibp.urllib.request.urlopen",
             return_value=_FakeResponse(response_body),
         ) as mock_open:
             pwned_mod.is_password_pwned(pw)
@@ -177,9 +177,9 @@ class TestIsPasswordPwned(unittest.TestCase):
         side_effects = [err_429, _FakeResponse(response_body)]
 
         with patch(
-            "keepass_tui.keepass.pwned.urllib.request.urlopen", side_effect=side_effects
+            "keepass_tui.security.hibp.urllib.request.urlopen", side_effect=side_effects
         ):
-            with patch("keepass_tui.keepass.pwned.time.sleep") as mock_sleep:
+            with patch("keepass_tui.security.hibp.time.sleep") as mock_sleep:
                 pwned, count = pwned_mod.is_password_pwned(pw, retries=3)
 
         self.assertTrue(pwned)
@@ -191,10 +191,10 @@ class TestIsPasswordPwned(unittest.TestCase):
         err_429 = _http_error(429, {"Retry-After": "0"})
 
         with patch(
-            "keepass_tui.keepass.pwned.urllib.request.urlopen",
+            "keepass_tui.security.hibp.urllib.request.urlopen",
             side_effect=[err_429, err_429, err_429],
         ):
-            with patch("keepass_tui.keepass.pwned.time.sleep"):
+            with patch("keepass_tui.security.hibp.time.sleep"):
                 with self.assertRaises(urllib.error.HTTPError) as ctx:
                     pwned_mod.is_password_pwned("pw", retries=3)
 
@@ -203,7 +203,7 @@ class TestIsPasswordPwned(unittest.TestCase):
     def test_non_429_http_error_raises(self):
         """HTTP-ошибка с кодом не 429 должна пробрасываться."""
         with patch(
-            "keepass_tui.keepass.pwned.urllib.request.urlopen",
+            "keepass_tui.security.hibp.urllib.request.urlopen",
             side_effect=_http_error(500),
         ):
             with self.assertRaises(urllib.error.HTTPError):
@@ -212,7 +212,7 @@ class TestIsPasswordPwned(unittest.TestCase):
     def test_url_error_raises(self):
         """Сетевая ошибка URLError должна пробрасываться."""
         with patch(
-            "keepass_tui.keepass.pwned.urllib.request.urlopen",
+            "keepass_tui.security.hibp.urllib.request.urlopen",
             side_effect=urllib.error.URLError("no network"),
         ):
             with self.assertRaises(urllib.error.URLError):
