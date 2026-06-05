@@ -51,6 +51,7 @@ keepass_tui
 └── tests                                  # tests
      ├── data                              # test data folder
      ├── integration                       # integration tests
+     │    ├── test_pwned.py                # tests for HIBP password breach checking.
      │    ├── test_record_and_dir.py       # CRUD tests for entries and groups
      │    └── test_ssh_change_password.py  # SSH password change tests
      └── unit                              # unit tests
@@ -144,8 +145,9 @@ When you press `r`, the app will connect via SSH using the credentials from the 
 
 ## Dependencies
 
-| Package       | Purpose                                      | Required     |
-|---------------|----------------------------------------------|:------------:|
-| `pykeepass`   | Create, read and write `.kdbx` files         | ✅           |
-| `paramiko`    | SSH connection for password changing         | ➖ optional  |
-| `pre-commit`  | Code quality checks before commit            | ➖ optional  |
+| Package    | Purpose                                      | Required     |
+|------------|----------------------------------------------|:------------:|
+| `pykeepass` | Create, read and write `.kdbx` files         | ✅           |
+| `PyYAML`   |  Reading and writing application configuration in YAML format| ✅|
+| `paramiko` | SSH connection for password changing         | ➖ optional  |
+| `pre-commit` | Code quality checks before commit            | ➖ optional  |
